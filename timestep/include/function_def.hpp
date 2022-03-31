@@ -6174,16 +6174,15 @@ INI_FUNC(init_phase_farzadi_)
 
   // Deterministic ICs for testing
   const double pi = 3.141592653589793;
-  const double A0 = 10.0 * w0/1.9e-8;
-  const double B0 = w0 * 2.0 * pi / 0.45e-6;
-  const double A1 = 5.0 * w0/1.9e-8;
-  const double B1 = w0 * 2.0 * pi / 0.6e-6;
+  const double A0 = 2.0 * w0/1.9e-8;
+  const double B0 = w0 * 2.0 * pi / 1.0e-6;
+  const double A1 = 4.0 * w0/1.9e-8;
+  const double B1 = w0 * 2.0 * pi / 1.2e-6;
   const double A2 = 10.0 * w0/1.9e-8;
-  const double B2 = w0 * 2.0 * pi / 0.4e-6;
-  const double A3 = 5.0 * w0/1.9e-8;
-  const double B3 = w0 * 2.0 * pi / 0.65e-6;
+  const double B2 = w0 * 2.0 * pi / 1.5e-6;
+  const double B3 = w0 * 2.0 * pi / 0.9e-6;
 
-  double perturbation = A0*std::sin(B0*y) + A1*std::sin(B1*y) + A2*std::sin(B2*z) + A3*std::sin(B3*z);
+  double perturbation = A0*std::sin(B0*y) + A1*std::cos(B1*y) + A2*std::sin(B2*y)* std::sin(B3*z);
   double h = base_height + perturbation;
   // End modifications from master
 
