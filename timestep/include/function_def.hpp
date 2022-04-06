@@ -6174,11 +6174,11 @@ INI_FUNC(init_phase_farzadi_)
 
   // Deterministic ICs for testing
   const double pi = 3.141592653589793;
-  const double A0 = 2.0 * w0/1.9e-8;
+  const double A0 = 1.0 * w0/1.9e-8;
   const double B0 = w0 * 2.0 * pi / 1.0e-6;
-  const double A1 = 4.0 * w0/1.9e-8;
+  const double A1 = 2.0 * w0/1.9e-8;
   const double B1 = w0 * 2.0 * pi / 1.2e-6;
-  const double A2 = 10.0 * w0/1.9e-8;
+  const double A2 = 5.0 * w0/1.9e-8;
   const double B2 = w0 * 2.0 * pi / 1.5e-6;
   const double B3 = w0 * 2.0 * pi / 0.9e-6;
 
@@ -6208,7 +6208,13 @@ INI_FUNC(init_phase_farzadi_test_)
 
 INI_FUNC(init_conc_farzadi_)
 {
-  return -1.;
+  const double width = 30.0;
+  const double uu_int = -0.33;
+  const double uu = (uu_int+1.0) * (-1.0 + 0.5*std::tanh((base_height-x)/width));
+
+  return uu;
+
+  //return -1.;
 }
 
 PPR_FUNC(postproc_c_)
