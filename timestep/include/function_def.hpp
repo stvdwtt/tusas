@@ -6174,15 +6174,15 @@ INI_FUNC(init_phase_farzadi_)
 
   // Deterministic ICs for testing
   const double pi = 3.141592653589793;
-  const double A0 = 1.0 * w0/1.9e-8;
-  const double B0 = w0 * 2.0 * pi / 1.0e-6;
-  const double A1 = 2.0 * w0/1.9e-8;
-  const double B1 = w0 * 2.0 * pi / 1.2e-6;
-  const double A2 = 5.0 * w0/1.9e-8;
-  const double B2 = w0 * 2.0 * pi / 1.5e-6;
-  const double B3 = w0 * 2.0 * pi / 0.9e-6;
+  const double A0 = 0.5 * 14.8811278e-8/w0;
+  const double B0 = w0 * 2.0 * pi / 3.2e-6;
+  const double A1 = 0.5 * 14.8811278e-8/w0;
+  const double B1 = w0 * 2.0 * pi / 3.3e-6;
+  const double A2 = 0.5 * 14.8811278e-8/w0;
+  const double B2 = w0 * 2.0 * pi / 2.0e-6;
+  const double B3 = w0 * 2.0 * pi / 2.0e-6;
 
-  double perturbation = A0*std::sin(B0*y) + A1*std::cos(B1*y) + A2*std::sin(B2*y)* std::sin(B3*z);
+  double perturbation = A0*std::sin(B0*y) + A1*std::sin(B1*z) + A2*std::sin(B2*y)* std::cos(B3*z);
   double h = base_height + perturbation;
   // End modifications from master
 
@@ -6208,9 +6208,9 @@ INI_FUNC(init_phase_farzadi_test_)
 
 INI_FUNC(init_conc_farzadi_)
 {
-  const double width = 30.0;
-  const double uu_int = -0.33;
-  const double uu = (uu_int+1.0) * (-1.0 + 0.5*std::tanh((base_height-x)/width));
+  const double width = 2.0 * 5.31734e-8/w0;
+  const double uu_int = -0.6;
+  const double uu = ( (uu_int+1.0) * 0.5*std::tanh((base_height-x)/width) - (-uu_int+(uu_int+1)/2.0) );
 
   return uu;
 
