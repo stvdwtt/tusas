@@ -5838,6 +5838,9 @@ namespace farzadi3d
   TUSAS_DEVICE
   double w0 = 5.65675e-8;
 
+  //double w0_h = 5.65675e-8;
+  double w0_h = 1.0;
+
   TUSAS_DEVICE
   double tau0 = 6.68455e-6;
 
@@ -5965,6 +5968,7 @@ z0 = z0_p;
 
   //calculated values
   double w0_p = lambda_p*d0_p/0.8839;
+  w0_h = w0_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(w0,&w0_p,sizeof(double));
 #else
@@ -6010,6 +6014,7 @@ z0 = z0_p;
   D_liquid_ = D_liquid__p;
 #endif
   //std::cout<<l_T0<<"   "<<G<<"  "<<Vp0<<"  "<<tau0<<"   "<<w0<<std::endl;
+  std::cout << "w0: " << w0_h << " tau0: " << tau0_p << std::endl;
 }
 
   //see tpetra::pfhub3 for a possibly better implementation of a,ap
@@ -6240,19 +6245,18 @@ INI_FUNC(init_phase_farzadi_)
 
  // Deterministic ICs for testing
  const double pi = 3.141592653589793;
- const double A0 = 0.5 * 14.8811278e-8/w0;
- const double B0 = w0 * 2.0 * pi / 3.2e-6;
- const double A1 = 0.5 * 14.8811278e-8/w0;
- const double B1 = w0 * 2.0 * pi / 3.3e-6;
- const double A2 = 0.5 * 14.8811278e-8/w0;
- const double B2 = w0 * 2.0 * pi / 2.0e-6;
- const double B3 = w0 * 2.0 * pi / 2.0e-6;
+ const double A0 = 0.5 * 14.8811278e-8/w0_h;
+ const double B0 = w0_h * 2.0 * pi / 3.2e-6;
+ const double A1 = 0.5 * 14.8811278e-8/w0_h;
+ const double B1 = w0_h * 2.0 * pi / 3.3e-6;
+ const double A2 = 0.5 * 14.8811278e-8/w0_h;
+ const double B2 = w0_h * 2.0 * pi / 2.0e-6;
+ const double B3 = w0_h * 2.0 * pi / 2.0e-6;
 
  double perturbation = A0*std::sin(B0*y) + A1*std::sin(B1*z) + A2*std::sin(B2*y)* std::cos(B3*z);
  double h = base_height + perturbation;
  // End modifications from master
 
-  //double h = base_height + amplitude*((double)rand()/(RAND_MAX));
 
   double c = (x-x0)*(x-x0) + (y-y0)*(y-y0) + (z-z0)*(z-z0);
 
@@ -6276,8 +6280,8 @@ INI_FUNC(init_phase_farzadi_test_)
 
 INI_FUNC(init_conc_farzadi_)
 {
-  const double width = 2.0 * 5.31734e-8/w0;
-  const double uu_int = -0.6;
+  const double width = 2.0 * 5.31734e-8/w0_h;
+  const double uu_int = -0.25;
   const double uu = ( (uu_int+1.0) * 0.5*std::tanh((base_height-x)/width) - (-uu_int+(uu_int+1)/2.0) );
 
   return uu;
