@@ -5804,6 +5804,7 @@ namespace farzadi3d
 
   TUSAS_DEVICE
   double k = 0.14;
+  double k_h = 0.14;
 
   TUSAS_DEVICE				//0.5
   double eps = 0.0;
@@ -5818,6 +5819,10 @@ namespace farzadi3d
   double m = -2.6;
   TUSAS_DEVICE					//-2.6 100.
   double c_inf = 3.;				//1.
+  double c_inf_h = 3.;
+
+  // Solidus at the c_inf
+  double Ts_h = 1693.4;
 
   TUSAS_DEVICE
   double G = 3.e5;
@@ -5825,6 +5830,7 @@ namespace farzadi3d
   double R = 0.003;
 //   TUSAS_DEVICE											//m/s
 //   double V = 0.003;
+  double R_h = 0.003;
 
   TUSAS_DEVICE											//m/s
   double d0 = 5.e-9;				//4.e-9					//m
@@ -5833,6 +5839,7 @@ namespace farzadi3d
   // parameters to scale dimensional quantities
   TUSAS_DEVICE
   double delta_T0 = 47.9143;
+  double delta_T0_h = 47.9143;
 
   TUSAS_DEVICE
   double w0 = 5.65675e-8;
@@ -5842,18 +5849,21 @@ namespace farzadi3d
 
   TUSAS_DEVICE
   double tau0 = 6.68455e-6;
+  double tau0_h = 6.68455e-6;
 
 //   TUSAS_DEVICE
 //   double Vp0 = .354508;
 
   TUSAS_DEVICE
   double l_T0 = 2823.43;
+  double l_T0_h = 2823.43; 
 
   TUSAS_DEVICE
   double D_liquid_ = 6.267;
 
   TUSAS_DEVICE
   double dT = 0.0;
+  double dT_h = 0.0;
 
 //   TUSAS_DEVICE
   double base_height = 15.;
@@ -5872,6 +5882,7 @@ namespace farzadi3d
 PARAM_FUNC(param_)
 {
   double k_p = plist->get<double>("k", 0.14);
+  k_h = k_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(k,&k_p,sizeof(double));
 #else
@@ -5908,6 +5919,7 @@ PARAM_FUNC(param_)
   m = m_p;
 #endif
   double c_inf_p = plist->get<double>("c_inf", 3.);
+  c_inf_h = c_inf_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(c_inf,&c_inf_p,sizeof(double));
 #else
@@ -5920,6 +5932,7 @@ PARAM_FUNC(param_)
   G = G_p;
 #endif
   double R_p = plist->get<double>("R", 0.003);
+  R_h = R_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(R,&R_p,sizeof(double));
 #else
@@ -5928,6 +5941,7 @@ PARAM_FUNC(param_)
 
 // added dT here
 double dT_p = plist->get<double>("dT", 0.0);
+dT_h = dT_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(dT,&dT_p,sizeof(double));
 #else
@@ -5974,6 +5988,7 @@ z0 = z0_p;
   w0 = w0_p;
 #endif
   double tau0_p = (lambda_p*0.6267*w0_p*w0_p)/D_liquid_p;
+  tau0_h = tau0_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(tau0,&tau0_p,sizeof(double));
 #else
@@ -5995,12 +6010,14 @@ z0 = z0_p;
 // #endif
 
   double delta_T0_p = abs(m_p)*c_inf_p*(1.-k_p)/k_p;
+  delta_T0_h = delta_T0_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(delta_T0,&delta_T0_p,sizeof(double));
 #else
   delta_T0 = delta_T0_p;
 #endif
   double l_T0_p = delta_T0_p/G_p;
+  l_T0_h = l_T0_p;
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(l_T0,&l_T0_p,sizeof(double));
 #else
@@ -6293,7 +6310,7 @@ PPR_FUNC(postproc_c_)
   const double uu = u[0];
   const double phi = u[1];
 
-  return -c_inf*(1.+k-phi+k*phi)*(-1.-uu+k*uu)/2./k;
+  return -c_inf_h*(1.+k_h-phi+k_h*phi)*(-1.-uu+k_h*uu)/2./k_h;
 }
 
 PPR_FUNC(postproc_t_)
@@ -6301,9 +6318,9 @@ PPR_FUNC(postproc_t_)
   // return the physical temperature in K here
   double x = xyz[0];
 
-  double xx = x*w0;
-  double tt = time*tau0;
-  return ((dT < 0.001) ? 877.3 + (xx-R*tt)/l_T0*delta_T0 : 877.3);
+  double xx = x*w0_h;
+  double tt = time*tau0_h;
+  return ((dT_h < 0.001) ? Ts_h + (xx-R_h*tt)/l_T0_h*delta_T0_h : Ts_h);
 }
 }//namespace farzadi3d
 
