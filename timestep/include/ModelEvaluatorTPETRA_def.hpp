@@ -17,7 +17,7 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include "Teuchos_AbstractFactoryStd.hpp"
-//#include <Kokkos_View.hpp> 	
+//#include <Kokkos_View.hpp>
 #include <Kokkos_Vector.hpp>
 #include <Kokkos_Core.hpp>
 //#include <Kokkos_CrsMatrix.hpp>
@@ -38,7 +38,7 @@
 //#include <MueLu_MLParameterListInterpreter_decl.hpp>
 //#include <MueLu_ML2MueLuParameterTranslator.hpp>
 //#include <MueLu_HierarchyManager.hpp>
-//#include <MueLu_Hierarchy_decl.hpp> 
+//#include <MueLu_Hierarchy_decl.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
 #include "Thyra_MueLuPreconditionerFactory.hpp"
 
@@ -77,7 +77,7 @@ template<class Scalar>
 ModelEvaluatorTPETRA<Scalar>::
 ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
 			Mesh *mesh,
-			 Teuchos::ParameterList plist 
+			 Teuchos::ParameterList plist
 		     ) :
   paramList(plist),
   mesh_(mesh),
@@ -90,9 +90,9 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
   numsteps_ = 0;
   set_test_case();
 
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   //comm_->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
-  
+
   if( 0 == comm_->getRank()) {
     if (sizeof(Mesh::mesh_lint_t) != sizeof(global_ordinal_type) ){
       std::cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<std::endl;
@@ -108,7 +108,7 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
     }
   }
   //mesh_ = Teuchos::rcp(new Mesh(*mesh));
-  mesh_->compute_nodal_adj(); 
+  mesh_->compute_nodal_adj();
 
   std::vector<Mesh::mesh_lint_t> node_num_int(mesh_->get_node_num_map());
   std::vector<Mesh::mesh_lint_t>::iterator max;
@@ -139,9 +139,9 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
     exit(0);
   }
   if( 0 == comm_->getRank()) std::cout<<"node_num_map constructed"<<std::endl;
-  
+
   std::vector<global_ordinal_type> my_global_nodes(numeqs_*node_num_map.size());
-  for(int i = 0; i < node_num_map.size(); i++){    
+  for(int i = 0; i < node_num_map.size(); i++){
     global_ordinal_type ngid = node_num_map[i];
     for( int k = 0; k < numeqs_; k++ ){
       my_global_nodes[numeqs_*i+k] = numeqs_*ngid+k;
@@ -164,11 +164,11 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
   GreedyTieBreak<local_ordinal_type,global_ordinal_type> greedy_tie_break;
   x_owned_map_ = Teuchos::rcp(new map_type(*(Tpetra::createOneToOne(x_overlap_map_,greedy_tie_break))));
   //x_owned_map_ ->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
-  
+
   importer_ = Teuchos::rcp(new import_type(x_owned_map_, x_overlap_map_));
   //exporter_ = Teuchos::rcp(new export_type(x_owned_map_, x_overlap_map_));
   exporter_ = Teuchos::rcp(new export_type(x_overlap_map_, x_owned_map_));
-  
+
   num_owned_nodes_ = x_owned_map_->getNodeNumElements()/numeqs_;
   num_overlap_nodes_ = x_overlap_map_->getNodeNumElements()/numeqs_;
 
@@ -217,16 +217,16 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
     W_overlap_graph_ = createOverlapGraph();
     P = rcp(new matrix_type(W_overlap_graph_));
     P_ = rcp(new matrix_type(W_graph_));
-    P->setAllToScalar((scalar_type)1.0); 
+    P->setAllToScalar((scalar_type)1.0);
     P->fillComplete();
     //P->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
     //cn we need to fill the matrix for muelu
     init_P_();
     //P_->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
-    
+
     Teuchos::ParameterList mueluParamList;
 
-    std::string optionsFile = "mueluOptions.xml";  
+    std::string optionsFile = "mueluOptions.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(optionsFile,Teuchos::Ptr<Teuchos::ParameterList>(&mueluParamList), *P_->getComm());
     if( 0 == comm_->getRank() ){
       std::cout << "\nReading MueLu parameter list from the XML file \""<<optionsFile<<"\" ...\n";
@@ -255,7 +255,7 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
   //nominalValues_.set_x(x0_);
   nominalValues_.set_x(Thyra::createVector(x0_, x_space_));
   time_=0.;
-  
+
   ts_time_import= Teuchos::TimeMonitor::getNewTimer("Tusas: Total Import Time");
   ts_time_resfill= Teuchos::TimeMonitor::getNewTimer("Tusas: Total Residual Fill Time");
   ts_time_precfill= Teuchos::TimeMonitor::getNewTimer("Tusas: Total Preconditioner Fill Time");
@@ -268,7 +268,7 @@ ModelEvaluatorTPETRA( const Teuchos::RCP<const Epetra_Comm>& comm,
 
   //HACK
   //cn 8-28-18 currently elem_color takes an epetra_mpi_comm....
-  //there are some epetra_maps and a routine that does mpi calls for off proc comm const 
+  //there are some epetra_maps and a routine that does mpi calls for off proc comm const
   //Comm = Teuchos::rcp(new Epetra_MpiComm( MPI_COMM_WORLD ));
   bool dorestart = paramList.get<bool> (TusasrestartNameString);
   Elem_col = Teuchos::rcp(new elem_color(Comm,mesh,dorestart));
@@ -301,13 +301,13 @@ Teuchos::RCP<Tpetra::CrsMatrix<>::crs_graph_type> ModelEvaluatorTPETRA<Scalar>::
   W_graph = Teuchos::rcp(new crs_graph_type(x_owned_map_, ni));
 
   for(int blk = 0; blk < mesh_->get_num_elem_blks(); blk++){
-    
+
     int n_nodes_per_elem = mesh_->get_num_nodes_per_elem_in_blk(blk);
     for (int ne=0; ne < mesh_->get_num_elem_in_blk(blk); ne++) {
       for (int i=0; i< n_nodes_per_elem; i++) {
 	int row = numeqs_*(
 			   mesh_->get_global_node_id(mesh_->get_node_id(blk, ne, i))
-			   ); 
+			   );
 	for(int j=0;j < n_nodes_per_elem; j++) {
 	  int column = numeqs_*(mesh_->get_global_node_id(mesh_->get_node_id(blk, ne, j)));
 
@@ -337,7 +337,7 @@ Teuchos::RCP<Tpetra::CrsMatrix<>::crs_graph_type> ModelEvaluatorTPETRA<Scalar>::
 template<class Scalar>
 Teuchos::RCP<Tpetra::CrsMatrix<>::crs_graph_type> ModelEvaluatorTPETRA<Scalar>::createOverlapGraph()
 {
-//   auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+//   auto comm_ = Teuchos::DefaultComm<int>::getComm();
 //   int mypid = comm_->getRank() ;
 //   if( 0 == mypid )
 //     std::cout<<std::endl<<"createOverlapGraph() started."<<std::endl<<std::endl;
@@ -353,7 +353,7 @@ Teuchos::RCP<Tpetra::CrsMatrix<>::crs_graph_type> ModelEvaluatorTPETRA<Scalar>::
   W_graph = Teuchos::rcp(new crs_graph_type(x_overlap_map_, ni));
 
   for(int blk = 0; blk < mesh_->get_num_elem_blks(); blk++){
-    
+
     const int n_nodes_per_elem = mesh_->get_num_nodes_per_elem_in_blk(blk);
 
     const int num_elem = (*mesh_->get_elem_num_map()).size();
@@ -362,7 +362,7 @@ Teuchos::RCP<Tpetra::CrsMatrix<>::crs_graph_type> ModelEvaluatorTPETRA<Scalar>::
       for (int i=0; i< n_nodes_per_elem; i++) {
 	const global_ordinal_type row = numeqs_*(
 			   mesh_->get_global_node_id(mesh_->get_node_id(blk, ne, i))
-			   ); 
+			   );
 	for(int j=0;j < n_nodes_per_elem; j++) {
 	  const global_ordinal_type column = numeqs_*(mesh_->get_global_node_id(mesh_->get_node_id(blk, ne, j)));
 
@@ -405,14 +405,14 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
   const Thyra::ModelEvaluatorBase::InArgs<Scalar> &inArgs,
   const Thyra::ModelEvaluatorBase::OutArgs<Scalar> &outArgs
   ) const
-{  
+{
 
-  //cn the easiest way probably to do the sum into off proc nodes is to load a 
+  //cn the easiest way probably to do the sum into off proc nodes is to load a
   //vector(overlap_map) the export with summation to the f_vec(owned_map)
   //after summing into. ie import is uniquely-owned to multiply-owned
   //export is multiply-owned to uniquely-owned
 
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
 
   typedef Thyra::TpetraOperatorVectorExtraction<Scalar,int> ConverterT;
 
@@ -439,7 +439,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
   Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> z_1dra = Kokkos::subview (z_view, Kokkos::ALL (), 0);
 
   auto u_view = u->getLocalView<Kokkos::DefaultExecutionSpace>();
-  Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> 
+  Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>>
     u_1dra = Kokkos::subview (u_view, Kokkos::ALL (), 0);
 
   const int blk = 0;
@@ -472,7 +472,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       }
       exit(0);
   }
-  
+
   if (nonnull(outArgs.get_f())){
 
     const Teuchos::RCP<vector_type> f_vec =
@@ -481,24 +481,24 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     Teuchos::RCP<vector_type> f_overlap = Teuchos::rcp(new vector_type(x_overlap_map_));
     f_vec->scale(0.);
     f_overlap->scale(0.);
-    Teuchos::TimeMonitor ResFillTimer(*ts_time_resfill);  
+    Teuchos::TimeMonitor ResFillTimer(*ts_time_resfill);
 
 //     std::string elem_type=mesh_->get_blk_elem_type(blk);
 //     std::string * elem_type_p = &elem_type;
 
     auto uold_view = uold->getLocalView<Kokkos::DefaultExecutionSpace>();
     auto uoldold_view = uoldold->getLocalView<Kokkos::DefaultExecutionSpace>();
-    
+
     auto f_view = f_overlap->getLocalView<Kokkos::DefaultExecutionSpace>();
-        
+
     auto f_1d = Kokkos::subview (f_view, Kokkos::ALL (), 0);
     //Kokkos::View<double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> f_1d = Kokkos::subview (f_view, Kokkos::ALL (), 0);
 
     //using RandomAccess should give better memory performance on better than tesla gpus (guido is tesla and does not show performance increase)
     //this will utilize texture memory not available on tesla or earlier gpus
-    Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> 
+    Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>>
       uold_1dra = Kokkos::subview (uold_view, Kokkos::ALL (), 0);
-    Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> 
+    Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>>
       uoldold_1dra = Kokkos::subview (uoldold_view, Kokkos::ALL (), 0);
 
     RESFUNC * h_rf;
@@ -558,13 +558,13 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       Kokkos::View<int*,Kokkos::DefaultExecutionSpace> elem_map_1d("elem_map_1d",num_elem);
       //Kokkos::vector<int> elem_map_k(num_elem);
       for(int i = 0; i<num_elem; i++) {
-	//elem_map_k[i] = elem_map[i]; 
-	elem_map_1d(i) = elem_map[i]; 
+	//elem_map_k[i] = elem_map[i];
+	elem_map_1d(i) = elem_map[i];
       }
       //exit(0);
       //auto elem_map_2d = Kokkos::subview(elem_map_1d, Kokkos::ALL (), Kokkos::ALL (), 0);
       //std::cout<<elem_map_2d.extent(0)<<"   "<<elem_map_2d.extent(1)<<std::endl;
-      //for (int ne=0; ne < num_elem; ne++) { 
+      //for (int ne=0; ne < num_elem; ne++) {
       //#define USE_TEAM
 #ifdef USE_TEAM
 #ifdef TUSAS_HAVE_CUDA
@@ -600,7 +600,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
 	//GPUBasisLHex * dummy = new (bh_view) GPUBasisLHex(LTP_quadrature_order);
 	GPUBasis * BGPU[TUSAS_MAX_NUMEQS];
-	
+
 	GPUBasisLQuad Bq[TUSAS_MAX_NUMEQS] = {GPUBasisLQuad(LTP_quadrature_order), GPUBasisLQuad(LTP_quadrature_order), GPUBasisLQuad(LTP_quadrature_order), GPUBasisLQuad(LTP_quadrature_order)};
 	GPUBasisLHex Bh[TUSAS_MAX_NUMEQS] = {GPUBasisLHex(LTP_quadrature_order), GPUBasisLHex(LTP_quadrature_order), GPUBasisLHex(LTP_quadrature_order), GPUBasisLHex(LTP_quadrature_order)};
 	if(4 == n_nodes_per_elem)  {
@@ -610,7 +610,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  for( int neq = 0; neq < numeqs; neq++ )
 	    BGPU[neq] = &Bh[neq];
 	}
-	
+
 	const int ngp = BGPU[0]->ngp();
 
 	double xx[BASIS_NODES_PER_ELEM];
@@ -624,12 +624,12 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	const int elemrow = elem*n_nodes_per_elem;
 
 	for(int k = 0; k < n_nodes_per_elem; k++){
-	  
+
 	  //meshc is a kokkos::vector, not sure how efficient this is
 	  //maybe a view is better?
 	  //const int nodeid = meshc[elemrow+k];//cn this is the local id
 	  const int nodeid = meshc_1dra(elemrow+k);//cn this is the local id
-	  
+
 	  xx[k] = x_1dra(nodeid);
 	  yy[k] = y_1dra(nodeid);
 	  zz[k] = z_1dra(nodeid);
@@ -638,7 +638,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  for( int neq = 0; neq < numeqs; neq++ ){
 	    //std::cout<<numeqs*k+neq<<"           "<<n_nodes_per_elem*neq+k <<"      "<<nodeid<<"    "<<numeqs_*nodeid+neq<<std::endl;
 
-	    uu[n_nodes_per_elem*neq+k] = u_1dra(numeqs*nodeid+neq); 
+	    uu[n_nodes_per_elem*neq+k] = u_1dra(numeqs*nodeid+neq);
 	    uu_old[n_nodes_per_elem*neq+k] = uold_1dra(numeqs*nodeid+neq);
 	    uu_oldold[n_nodes_per_elem*neq+k] = uoldold_1dra(numeqs*nodeid+neq);
 	  }//neq
@@ -683,7 +683,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       });//parallel_for
 		     //};//ne
 
-    }//c 
+    }//c
 
 #ifdef TUSAS_HAVE_CUDA
   cudaFree(d_rf);
@@ -691,7 +691,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 #endif
 			    //exit(0);
     {
-      Teuchos::TimeMonitor ImportTimer(*ts_time_import);  
+      Teuchos::TimeMonitor ImportTimer(*ts_time_import);
       f_vec->doExport(*f_overlap, *exporter_, Tpetra::ADD);
     }
   }//get_f
@@ -703,20 +703,20 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       //mesh_->get_side_set_node_list(ss_id)
       //in order to get this working with kokkos on openmp, gpu
       //with a kokkos function for the nbc function
-      
-      
-      
-      //     if( (0==elem_type.compare("HEX8")) 
-      // 	|| (0==elem_type.compare("HEX")) 
-      // 	|| (0==elem_type.compare("hex8")) 
+
+
+
+      //     if( (0==elem_type.compare("HEX8"))
+      // 	|| (0==elem_type.compare("HEX"))
+      // 	|| (0==elem_type.compare("hex8"))
       // 	|| (0==elem_type.compare("hex"))  ){ // linear hex
-      //     } 
+      //     }
       if(8 == n_nodes_per_elem) { // linear hex
       }
       else {
 	exit(0);
-      }   
-      
+      }
+
       const Teuchos::RCP<vector_type> f_vec =
 	ConverterT::getTpetraVector(outArgs.get_f());
       Teuchos::RCP<vector_type> f_overlap = Teuchos::rcp(new vector_type(x_overlap_map_));
@@ -731,22 +731,22 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       auto uoldold_view = uoldold->getLocalView<Kokkos::DefaultHostExecutionSpace>();
       auto f_view = f_overlap->getLocalView<Kokkos::DefaultHostExecutionSpace>();
       auto f_1d = Kokkos::subview (f_view, Kokkos::ALL (), 0);
-      Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> 
+      Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>>
 	uold_1dra = Kokkos::subview (uold_view, Kokkos::ALL (), 0);
-      Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> 
+      Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>>
 	uoldold_1dra = Kokkos::subview (uoldold_view, Kokkos::ALL (), 0);
       GPUBasisLQuad Bq = GPUBasisLQuad(LTP_quadrature_order);
       GPUBasis * BGPU = &Bq;
       const int num_node_per_side = 4;
-      
+
       const int ngp = BGPU->ngp();
-      
+
       std::map<int,NBCFUNC>::iterator it;
-      
+
       for( int k = 0; k < numeqs_; k++ ){
 	for(it = (*neumannfunc_)[k].begin();it != (*neumannfunc_)[k].end(); ++it){
 	  const int ss_id = it->first;
-	  
+
 	  //loop over element faces--this will be the parallel loop eventually
 	  //we would need toto know coloring on the sideset or switch to scattered mesh
 	  for ( int j = 0; j < mesh_->get_side_set(ss_id).size(); j++ ){//loop over element faces--this will be the parallel loop
@@ -765,26 +765,26 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	      uu_old[ll] = uold_1dra(numeqs_*lid+k);
 	      uu_oldold[ll] = uoldold_1dra(numeqs_*lid+k);
 	    }//ll
-	    
+
 	    BGPU->computeElemData(&xx[0], &yy[0], &zz[0]);
 	    for ( int gp = 0; gp < ngp; gp++){
 	      const double jacwt = BGPU->getBasis(gp, &xx[0], &yy[0], &zz[0], &uu[0], &uu_old[0], &uu_oldold[0]);//we can add uu_old, uu_oldold
-	      for( int i = 0; i < num_node_per_side; i++ ){  
-		
+	      for( int i = 0; i < num_node_per_side; i++ ){
+
 		const int lid = mesh_->get_side_set_node_list(ss_id)[j*num_node_per_side+i];
 		const int row = numeqs_*lid + k;
-		
+
 		const double val = -jacwt*(it->second)(BGPU,i,dt,dtold,t_theta,t_theta2,time);
-		
+
 		f_1d[row] += val;
-		
+
 	      }//i
 	    }//gp
 	  }//j
 	}//it
       }//k
       {
-	Teuchos::TimeMonitor ImportTimer(*ts_time_import);  
+	Teuchos::TimeMonitor ImportTimer(*ts_time_import);
 	f_vec->doExport(*f_overlap, *exporter_, Tpetra::ADD);
       }
     }//neumann
@@ -795,7 +795,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       ConverterT::getTpetraVector(outArgs.get_f());
     //std::vector<Mesh::mesh_lint_t> node_num_map(mesh_->get_node_num_map());
     std::map<int,DBCFUNC>::iterator it;
-    
+
     Teuchos::RCP<vector_type> f_overlap = Teuchos::rcp(new vector_type(x_overlap_map_));
     {
       Teuchos::TimeMonitor ImportTimer(*ts_time_import);
@@ -807,12 +807,12 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
     //on host only right now
     auto f_view = f_overlap->getLocalView<Kokkos::DefaultHostExecutionSpace>();
-    
-    
+
+
     //auto u_1d = Kokkos::subview (u_view, Kokkos::ALL (), 0);
     //Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> u_1dra = Kokkos::subview (u_view, Kokkos::ALL (), 0);
     auto f_1d = Kokkos::subview (f_view, Kokkos::ALL (), 0);
-	
+
     for( int k = 0; k < numeqs_; k++ ){
       for(it = (*dirichletfunc_)[k].begin();it != (*dirichletfunc_)[k].end(); ++it){
 	const int ns_id = it->first;
@@ -825,7 +825,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  node_set_view(i) = (mesh_->get_node_set(ns_id))[i];
         }
 
-#ifdef TUSAS_RUN_ON_CPU	
+#ifdef TUSAS_RUN_ON_CPU
  	for ( int j = 0; j < num_node_ns; j++ ){
 #else
 	Kokkos::parallel_for(num_node_ns,KOKKOS_LAMBDA (const size_t& j){
@@ -835,14 +835,14 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 #ifdef TUSAS_RUN_ON_CPU
 			       const double xx = x_1dra(lid);
 			       const double yy = y_1dra(lid);
-			       const double zz = z_1dra(lid);	
+			       const double zz = z_1dra(lid);
 			       const double val1 = (it->second)(xx,yy,zz,time);
 #else
 			       const double val1 = tusastpetra::dbc_zero_(0.,0.,0.,time);
 #endif
 			       const double val = u_1dra(numeqs_*lid + k)  - val1;
 			       f_1d(numeqs_*lid + k) = val;
-#ifdef TUSAS_RUN_ON_CPU	
+#ifdef TUSAS_RUN_ON_CPU
 			     }//j
 #else
 			     });//parallel_for
@@ -850,23 +850,23 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       }//it
     }//k
     {
-      Teuchos::TimeMonitor ImportTimer(*ts_time_import);  
+      Teuchos::TimeMonitor ImportTimer(*ts_time_import);
       f_vec->doExport(*f_overlap, *exporter_, Tpetra::REPLACE);//REPLACE ???
     }
   }//get_f
 
 
 
-      
+
   if( nonnull(outArgs.get_W_prec() )){
 
     Teuchos::TimeMonitor PrecFillTimer(*ts_time_precfill);
 
     P_->resumeFill();
-    P_->setAllToScalar((scalar_type)0.0); 
+    P_->setAllToScalar((scalar_type)0.0);
 
     P->resumeFill();
-    P->setAllToScalar((scalar_type)0.0); 
+    P->setAllToScalar((scalar_type)0.0);
 
     auto PV = P->getLocalMatrix();//this is a KokkosSparse::CrsMatrix<scalar_type,local_ordinal_type, node_type> PV = P->getLocalMatrix();
 
@@ -923,16 +923,16 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       //Kokkos::vector<int> elem_map_k(num_elem);
       for(int i = 0; i<num_elem; i++) {
 	//elem_map_k[i] = elem_map[i];
-	elem_map_1d(i) = elem_map[i]; 
+	elem_map_1d(i) = elem_map[i];
 	//std::cout<<comm_->getRank()<<" "<<c<<" "<<i<<" "<<elem_map_k[i]<<std::endl;
       }
-      //exit(0);	
+      //exit(0);
 
       Kokkos::parallel_for(num_elem,KOKKOS_LAMBDA(const int& ne){
 
 			     //an array of pointers to GPUBasis
 	GPUBasis * BGPU[TUSAS_MAX_NUMEQS];
-	
+
 	GPUBasisLQuad Bq[TUSAS_MAX_NUMEQS];
 	GPUBasisLHex Bh[TUSAS_MAX_NUMEQS];
 	if(4 == n_nodes_per_elem)  {
@@ -942,7 +942,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  for( int neq = 0; neq < numeqs; neq++ )
 	    BGPU[neq] = &Bh[neq];
 	}
-	
+
 	const int ngp = BGPU[0]->ngp();
 
 	//const int elem = elem_map_k[ne];
@@ -955,10 +955,10 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
 	const int elemrow = elem*n_nodes_per_elem;
 	for(int k = 0; k < n_nodes_per_elem; k++){
-	  
+
 	  //const int nodeid = meshc[elemrow+k];
 	  const int nodeid = meshc_1d(elemrow+k);
-	  
+
 	  xx[k] = x_1dra(nodeid);
 	  yy[k] = y_1dra(nodeid);
 	  zz[k] = z_1dra(nodeid);
@@ -983,27 +983,27 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	    for(int j=0;j < n_nodes_per_elem; j++) {
 	      //local_ordinal_type lcol[1] = {numeqs*meshc[elemrow+j]};
 	      local_ordinal_type lcol[1] = {numeqs*meshc_1d(elemrow+j)};
-	      
+
 	      for( int neq = 0; neq < numeqs; neq++ ){
 #ifdef TUSAS_HAVE_CUDA
 		scalar_type val[1] = {jacwt*d_pf[neq](*BGPU,i,j,dt,t_theta,neq)};
 #else
 		scalar_type val[1] = {jacwt*h_pf[neq](*BGPU,i,j,dt,t_theta,neq)};
 #endif
-		
+
 		//cn probably better to fill a view for val and lcol for each column
-		const local_ordinal_type row = lrow +neq; 
+		const local_ordinal_type row = lrow +neq;
 		local_ordinal_type col[1] = {lcol[0] + neq};
-		
+
 		//cn this call seems to be what is crashing the cuda version
-		
+
 	      //P->sumIntoLocalValues(lrow,(local_ordinal_type)1,val,lcol,false);
 		PV.sumIntoValues (row, col,(local_ordinal_type)1,val);
-		
+
 	      }//neq
-		
+
 	    }//j
-	    
+
 	  }//i
 
 	}//gp
@@ -1021,9 +1021,9 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     P->fillComplete();
 
     //P->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
-  
+
     {
-      Teuchos::TimeMonitor ImportTimer(*ts_time_import);  
+      Teuchos::TimeMonitor ImportTimer(*ts_time_import);
       P_->doExport(*P, *exporter_, Tpetra::ADD);
     }
 
@@ -1032,7 +1032,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     //P_->describe(*(Teuchos::VerboseObjectBase::getDefaultOStream()),Teuchos::EVerbosityLevel::VERB_EXTREME );
     //exit(0);
 
-  }//outArgs.get_W_prec() 
+  }//outArgs.get_W_prec()
 
 
 
@@ -1041,7 +1041,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     P->resumeFill();//this is overlap, P_ is owned
 
     // local nodeset ids are on overlap
-   
+
 #ifdef TUSAS_RUN_ON_CPU
     auto PV = P->getLocalMatrix();
     std::vector<Mesh::mesh_lint_t> node_num_map(mesh_->get_node_num_map());
@@ -1050,13 +1050,13 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       for(it = (*dirichletfunc_)[k].begin();it != (*dirichletfunc_)[k].end(); ++it){
 	const int ns_id = it->first;
 	const int num_node_ns = mesh_->get_node_set(ns_id).size();
-  
+
 	size_t ns_size = (mesh_->get_node_set(ns_id)).size();
 	Kokkos::View <int*> node_set_view("nsv",ns_size);
 	for (size_t i = 0; i < ns_size; ++i) {
 	  node_set_view(i) = (mesh_->get_node_set(ns_id))[i];
         }
-	
+
  	//for ( int j = 0; j < num_node_ns; j++ ){
 	Kokkos::parallel_for(num_node_ns,KOKKOS_LAMBDA(const size_t j){
 
@@ -1064,17 +1064,17 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  //const global_ordinal_type gid_overlap = x_overlap_map_->getGlobalElement(lid_overlap);
 	  //const local_ordinal_type lrow = x_owned_map_->getLocalElement(gid_overlap);
 	  const local_ordinal_type lrow = (local_ordinal_type)lid_overlap;
-	 
+
 	  size_t ncol = 0;
 	  const local_ordinal_type row = numeqs*lrow + k;
-	  
+
 	  auto RV = PV.row(row);
 	  //const Kokkos::SparseRowView<Kokkos::CrsMatrix> RV = PV.row(row);
 	  ncol = RV.length;
-	  
+
 	  scalar_type * vals = new scalar_type[ncol];
 	  local_ordinal_type * inds = new local_ordinal_type[ncol];
-	  
+
 	  for(int i = 0; i<(int)ncol; i++){
 	    inds[i] = RV.colidx(i);
 	    vals[i] = 0.0;
@@ -1082,13 +1082,13 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	    //std::cout<<row<<"   "<<inds[i]<<"  "<<vals[i]<<std::endl;
 	    RV.value(i) = vals[i];
 	  }
-	  
-	  //P_->replaceLocalValues(row, ncol, vals, inds );	    
+
+	  //P_->replaceLocalValues(row, ncol, vals, inds );
 	  //PV.replaceValues(row, inds, ncol, vals );
-	  
+
 	  delete[] vals;
 	  delete[] inds;
-	
+
 	  });//parallel_for
 	  //}//j
 
@@ -1104,7 +1104,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
     P_->resumeFill();
     {
-      Teuchos::TimeMonitor ImportTimer(*ts_time_import);  
+      Teuchos::TimeMonitor ImportTimer(*ts_time_import);
       P_->doExport(*P, *exporter_, Tpetra::REPLACE);
     }
 
@@ -1118,7 +1118,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
     MueLu::ReuseTpetraPreconditioner( P_, *prec_  );
 
-  }//outArgs.get_W_prec() 
+  }//outArgs.get_W_prec()
 
   return;
 }
@@ -1128,7 +1128,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 template<class scalar_type>
 void ModelEvaluatorTPETRA<scalar_type>::init_nox()
 {
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   int mypid = comm_->getRank() ;
   if( 0 == mypid )
     std::cout<<std::endl<<"init_nox() started."<<std::endl<<std::endl;
@@ -1138,8 +1138,8 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   ::Stratimikos::DefaultLinearSolverBuilder builder;
   Teuchos::RCP<Teuchos::ParameterList> lsparams =
     Teuchos::rcp(new Teuchos::ParameterList(paramList.sublist(TusaslsNameString)));
-   
-  //::Stratimikos::enableMueLu<local_ordinal_type,global_ordinal_type, node_type>(builder); 
+
+  //::Stratimikos::enableMueLu<local_ordinal_type,global_ordinal_type, node_type>(builder);
   using Base = Thyra::PreconditionerFactoryBase<scalar_type>;
   using Impl = Thyra::MueLuPreconditionerFactory<scalar_type,local_ordinal_type,global_ordinal_type, node_type>;
   builder.setPreconditioningStrategyFactory(Teuchos::abstractFactoryStd<Base,Impl>(), "MueLu");
@@ -1214,7 +1214,7 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   double relrestol = 1.0e-6;
   relrestol = paramList.get<double> (TusasnoxrelresNameString);
 
-  Teuchos::RCP<NOX::StatusTest::NormF> relresid = 
+  Teuchos::RCP<NOX::StatusTest::NormF> relresid =
     Teuchos::rcp(new NOX::StatusTest::NormF(*nox_group.get(), relrestol));
 
   Teuchos::RCP<NOX::StatusTest::NormWRMS> wrms =
@@ -1258,21 +1258,21 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
     Teuchos::ParameterList *atsList;
     atsList = &paramList.sublist (TusasatslistNameString, false );
     if(atsList->get<std::string> (TusasatstypeNameString) == "predictor corrector"){
-      //init_predictor(); 
-      
+      //init_predictor();
+
       Teuchos::RCP<NOX::Thyra::MatrixFreeJacobianOperator<double> > jfnkOp1 =
 	Teuchos::rcp(new NOX::Thyra::MatrixFreeJacobianOperator<double>(printParams));
-      
+
       jfnkOp1->setParameterList(jfnkParams);
-      
+
       Teuchos::RCP<NOX::Thyra::Group> noxpred_group =
-	Teuchos::rcp(new NOX::Thyra::Group(*initial_guess, 
-					   thyraModel, 
-					   jfnkOp1, 
-					   lowsFactory, 
-					   Teuchos::null, 
-					   Teuchos::null, 
-					   Teuchos::null, 
+	Teuchos::rcp(new NOX::Thyra::Group(*initial_guess,
+					   thyraModel,
+					   jfnkOp1,
+					   lowsFactory,
+					   Teuchos::null,
+					   Teuchos::null,
+					   Teuchos::null,
 					   Teuchos::null));
       jfnkOp1->setBaseEvaluationToNOXGroup(noxpred_group.create_weak());
       noxpred_group->computeF();
@@ -1284,7 +1284,7 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
       predmaxit = paramList.get<int> (TusaspredmaxiterNameString,20);
       Teuchos::RCP<NOX::StatusTest::MaxIters> maxiters1 =
 	Teuchos::rcp(new NOX::StatusTest::MaxIters(predmaxit));
-      Teuchos::RCP<NOX::StatusTest::NormF>relresid1 = 
+      Teuchos::RCP<NOX::StatusTest::NormF>relresid1 =
 	Teuchos::rcp(new NOX::StatusTest::NormF(*noxpred_group.get(), relrestolp));//1.0e-6 for paper
       //Teuchos::rcp(new NOX::StatusTest::NormF(*noxpred_group.get(), relrestol));//1.0e-6 for paper
       Teuchos::RCP<NOX::StatusTest::Combo> converged1 =
@@ -1292,7 +1292,7 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
       converged1->addStatusTest(relresid1);
       converged1->addStatusTest(maxiters1);
       //combo->addStatusTest(converged1);
-      
+
       Teuchos::RCP<Teuchos::ParameterList> nl_params1 =
 	Teuchos::rcp(new Teuchos::ParameterList);
       nl_params1->set("Nonlinear Solver", "Line Search Based");
@@ -1308,7 +1308,7 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
 		    NOX::Utils::Details //+
 			 //NOX::Utils::LinearSolverDetails
 			 );
-      
+
       predictor_ =  NOX::Solver::buildSolver(noxpred_group, converged1, nl_params1);
     }
   }
@@ -1336,7 +1336,7 @@ ModelEvaluatorTPETRA<Scalar>::create_W_prec() const
   Teuchos::RCP<Tpetra::Operator<scalar_type,local_ordinal_type, global_ordinal_type, node_type> > Tprec =
     Teuchos::rcp_dynamic_cast<Tpetra::Operator<scalar_type,local_ordinal_type, global_ordinal_type, node_type> >(prec_,true);
 
-  const Teuchos::RCP<Thyra::LinearOpBase< scalar_type > > P_op = 
+  const Teuchos::RCP<Thyra::LinearOpBase< scalar_type > > P_op =
     Thyra::tpetraLinearOp<scalar_type,local_ordinal_type, global_ordinal_type, node_type>(f_space_,x_space_,Tprec);
 
   Teuchos::RCP<Thyra::DefaultPreconditioner<Scalar> > prec =
@@ -1376,13 +1376,13 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
       Teuchos::RCP< Thyra::VectorBase< double > > guess;
       guess = Thyra::createVector(u_old_,x_space_);
       Teuchos::TimeMonitor NSolveTimer(*ts_time_nsolve);
-      
+
       if(paramList.get<bool> (TusasestimateTimestepNameString)){
 	Teuchos::ParameterList *atsList;
 	atsList = &paramList.sublist (TusasatslistNameString, false );
-	if(atsList->get<std::string> (TusasatstypeNameString) == "predictor corrector"){	  
+	if(atsList->get<std::string> (TusasatstypeNameString) == "predictor corrector"){
 	  predictor();
-	  guess = Thyra::createVector(pred_temp_,x_space_);	
+	  guess = Thyra::createVector(pred_temp_,x_space_);
 	}//if
       }//if
 
@@ -1390,7 +1390,7 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
 	std::cout<<" Corrector step started"<<std::endl;
       NOX::Thyra::Vector thyraguess(*guess);
       solver_->reset(thyraguess);
-      
+
       NOX::StatusTest::StatusType solvStatus = solver_->solve();
       if( !(NOX::StatusTest::Converged == solvStatus)) {
 	if( 0 == mypid )
@@ -1407,8 +1407,8 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
       numit++;
     }//timer
     nnewt_ += solver_->getNumIterations();
-    
-    const Thyra::VectorBase<double> * sol = 
+
+    const Thyra::VectorBase<double> * sol =
       &(dynamic_cast<const NOX::Thyra::Vector&>(
 						solver_->getSolutionGroup().getX()
 						).getThyraVector()
@@ -1419,7 +1419,7 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
 
     const size_t localLength = num_owned_nodes_;
 
-    //we need x_vec as a kokkos view for the parallel_for to work on gpu   
+    //we need x_vec as a kokkos view for the parallel_for to work on gpu
 
     auto un_view = u_new_->getLocalView<Kokkos::DefaultHostExecutionSpace>();
     auto un_1d = Kokkos::subview (un_view, Kokkos::ALL (), 0);
@@ -1436,7 +1436,7 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
     if(localprojectionindices_.size() > 0 ){
 
       if( 0 == mypid)std::cout<<" Performing local projection "<<std::endl;
-      
+
       auto un_view = u_new_->getLocalView<Kokkos::DefaultHostExecutionSpace>();
       auto un_1d = Kokkos::subview (un_view, Kokkos::ALL (), 0);
       //for (int nn=0; nn < localLength; nn++) {//cn figure out a better way here...
@@ -1446,7 +1446,7 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
 	for( auto k : localprojectionindices_ ){
 	  norm = norm + un_1d[numeqs_*nn+k]*un_1d[numeqs_*nn+k];
 	  //std::cout<<"   "<<k<<" "<<numeqs_*nn+k<<" "<<un_1d[numeqs_*nn+k]<<" ";
-	} 
+	}
 	//std::cout<<"norm = "<<norm<<std::endl;
 	for( auto k : localprojectionindices_ ){
 	  un_1d[numeqs_*nn+k] = un_1d[numeqs_*nn+k]/sqrt(norm);
@@ -1456,23 +1456,23 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
     }//if
 
     if((paramList.get<bool> (TusasestimateTimestepNameString))
-       && !timeadapt){ 
+       && !timeadapt){
       const double d = estimatetimestep();
     }//if
-    if(timeadapt){ 
+    if(timeadapt){
       dtpred = estimatetimestep();
     }//if
-    
+
     if( timeadapt ){
 
       if(dtpred < dt_){
-	
+
 	dt_ = dtpred;
 
 	if( 0 == mypid)std::cout<<"     advance() step NOT ACCEPTED with dt = "<<dt_
 				<<"; new dt = "<<dtpred
 				<<"; and iterations = "<<numit<<std::endl;
-	
+
       }else{
 	if( 0 == mypid)std::cout<<"     advance() step accepted with dt = "<<dt_
 				<<"; new dt = "<<dtpred
@@ -1498,7 +1498,7 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
     it->estimate_gradient(u_old_);
     it->estimate_error(u_old_);
   }
-  ++numsteps_;   
+  ++numsteps_;
 
   dt_ = dtpred;
   return dtold_;
@@ -1507,15 +1507,15 @@ double ModelEvaluatorTPETRA<scalar_type>::advance()
 template<class scalar_type>
   void ModelEvaluatorTPETRA<scalar_type>::initialize()
 {
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   if( 0 == comm_->getRank()) std::cout<<std::endl<<"initialize started"<<std::endl<<std::endl;
   bool dorestart = paramList.get<bool> (TusasrestartNameString);
-  if (!dorestart){ 
-    init(u_old_); 
+  if (!dorestart){
+    init(u_old_);
 
     //*u_old_old_ = *u_old_;
     u_old_old_->scale(1.,*u_old_);
-  
+
     Teuchos::ParameterList *atsList;
     atsList = &paramList.sublist (TusasatslistNameString, false );
 
@@ -1533,12 +1533,12 @@ template<class scalar_type>
 
     int mypid = comm_->getRank();
     int numproc = comm_->getSize();
-    
+
     if( 1 == numproc ){//cn for now
       //if( 0 == mypid ){
       outfilename = "results.e";
       ex_id_ = mesh_->create_exodus(outfilename.c_str());//this calls ex_open
-      
+
     }
     else{
       //std::string decompPath="decomp/";
@@ -1556,7 +1556,7 @@ template<class scalar_type>
       mesh_->add_nodal_field((*varnames_)[k]);
     }
 
-    if(paramList.get<bool> (TusasestimateTimestepNameString)){    
+    if(paramList.get<bool> (TusasestimateTimestepNameString)){
       setadaptivetimestep();
     }
 
@@ -1572,7 +1572,7 @@ template<class scalar_type>
       mesh_->add_nodal_field((*varnames_)[k]);
     }
   }//if !dorestart
-   
+
   if( 0 == comm_->getRank()) std::cout<<std::endl<<"initialize finished"<<std::endl<<std::endl;
 }
 template<class scalar_type>
@@ -1583,14 +1583,14 @@ void ModelEvaluatorTPETRA<scalar_type>::init(Teuchos::RCP<vector_type> u)
   //on host only now
   auto u_view = u->getLocalView<Kokkos::DefaultHostExecutionSpace>();
   auto u_1d = Kokkos::subview (u_view, Kokkos::ALL (), 0);
-  
+
   const size_t localLength = num_owned_nodes_;
   for( int k = 0; k < numeqs_; k++ ){
     //#pragma omp parallel for
     //for (size_t nn=0; nn < localLength; nn++) {
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0,localLength),[=](const int& nn){
 
-      const global_ordinal_type gid_node = x_owned_map_->getGlobalElement(nn*numeqs_); 
+      const global_ordinal_type gid_node = x_owned_map_->getGlobalElement(nn*numeqs_);
       const local_ordinal_type lid_overlap = (x_overlap_map_->getLocalElement(gid_node))/numeqs_;
 
       const double x = mesh_->get_x(lid_overlap);
@@ -1612,37 +1612,37 @@ template<class scalar_type>
 void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 {
   bool dorestart = paramList.get<bool> (TusasrestartNameString);
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   if( 0 == comm_->getRank()) std::cout<<std::endl<<"set_test_case started"<<std::endl<<std::endl;
- 
+
   paramfunc_.resize(0);
 
   if("heat" == paramList.get<std::string> (TusastestNameString)){
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     numeqs_ = 1;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     //(*residualfunc_)[0] = &tusastpetra::residual_heat_test_;
     (*residualfunc_)[0] = tpetra::heat::residual_heat_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::heat::prec_heat_test_dp_;
-    
+
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
-    
+
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::heat::init_heat_test_;
-    
-    
+
+
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
     //  [variable index][nodeset index]
-    (*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[0][1] = &dbc_zero_;						 
-    (*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    (*dirichletfunc_)[0][0] = &dbc_zero_;
+    (*dirichletfunc_)[0][1] = &dbc_zero_;
+    (*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &dbc_zero_;
 
     paramfunc_.resize(1);
@@ -1654,73 +1654,73 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     post_proc[0].postprocfunc_ = &tpetra::heat::postproc_;
 
   }else if("radconvbc" == paramList.get<std::string> (TusastestNameString)){
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     numeqs_ = 1;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::heat::residual_heat_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::heat::prec_heat_test_dp_;
-    
+
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
-    
+
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::radconvbc::init_heat_;
-    
-    
+
+
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
     //  [variable index][nodeset index]
-    //(*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[0][1] = &tpetra::radconvbc::dbc_;						 
-    //(*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    //(*dirichletfunc_)[0][0] = &dbc_zero_;
+    (*dirichletfunc_)[0][1] = &tpetra::radconvbc::dbc_;
+    //(*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &tpetra::radconvbc::dbc_;
 
     paramfunc_.resize(2);
     paramfunc_[0] = &tpetra::heat::param_;//heat
     paramfunc_[1] = &tpetra::radconvbc::param_;
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     neumannfunc_ = new std::vector<std::map<int,NBCFUNC>>(numeqs_);
     //neumannfunc_ = NULL;
-    //(*neumannfunc_)[0][0] = &tpetra::robin::nbc_robin_test_;								 
-    //(*neumannfunc_)[0][1] = &nbc_zero_;						 
-    (*neumannfunc_)[0][2] = &tpetra::radconvbc::nbc_;						 
+    //(*neumannfunc_)[0][0] = &tpetra::robin::nbc_robin_test_;
+    //(*neumannfunc_)[0][1] = &nbc_zero_;
+    (*neumannfunc_)[0][2] = &tpetra::radconvbc::nbc_;
     //(*neumannfunc_)[0][3] = &nbc_zero_;
 
     //post_proc.push_back(new post_process(Comm,mesh_,(int)0));
     //post_proc[0].postprocfunc_ = &tpetra::postproc_;
 
   }else if("NLheatIMR" == paramList.get<std::string> (TusastestNameString)){
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     numeqs_ = 1;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     //(*residualfunc_)[0] = &tusastpetra::residual_heat_test_;
     (*residualfunc_)[0] = tpetra::residual_nlheatimr_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::heat::prec_heat_test_dp_;
-    
+
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
-    
+
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::heat::init_heat_test_;
-    
-    
+
+
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
     //  [variable index][nodeset index]
-    (*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[0][1] = &dbc_zero_;						 
-    (*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    (*dirichletfunc_)[0][0] = &dbc_zero_;
+    (*dirichletfunc_)[0][1] = &dbc_zero_;
+    (*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &dbc_zero_;
 
     paramfunc_.resize(1);
@@ -1732,31 +1732,31 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     post_proc[0].postprocfunc_ = &tpetra::heat::postproc_;
 
   }else if("NLheatCN" == paramList.get<std::string> (TusastestNameString)){
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     numeqs_ = 1;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     //(*residualfunc_)[0] = &tusastpetra::residual_heat_test_;
     (*residualfunc_)[0] = tpetra::residual_nlheatcn_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::prec_nlheatcn_test_dp_;
-    
+
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
-    
+
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::heat::init_heat_test_;
-    
-    
+
+
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
     //  [variable index][nodeset index]
-    (*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[0][1] = &dbc_zero_;						 
-    (*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    (*dirichletfunc_)[0][0] = &dbc_zero_;
+    (*dirichletfunc_)[0][1] = &dbc_zero_;
+    (*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &dbc_zero_;
 
     paramfunc_.resize(1);
@@ -1769,9 +1769,9 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
 
   }else if("heat2" == paramList.get<std::string> (TusastestNameString)){
-    
+
     numeqs_ = 2;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
 
     (*residualfunc_)[0] = tpetra::heat::residual_heat_test_dp_;
@@ -1792,25 +1792,25 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     //dirichletfunc_ = NULL;
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
     //  [variable index][nodeset index]
-    (*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[0][1] = &dbc_zero_;						 
-    (*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    (*dirichletfunc_)[0][0] = &dbc_zero_;
+    (*dirichletfunc_)[0][1] = &dbc_zero_;
+    (*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &dbc_zero_;
-    (*dirichletfunc_)[1][0] = &dbc_zero_;							 
-    (*dirichletfunc_)[1][1] = &dbc_zero_;						 
-    (*dirichletfunc_)[1][2] = &dbc_zero_;						 
+    (*dirichletfunc_)[1][0] = &dbc_zero_;
+    (*dirichletfunc_)[1][1] = &dbc_zero_;
+    (*dirichletfunc_)[1][2] = &dbc_zero_;
     (*dirichletfunc_)[1][3] = &dbc_zero_;
 
     neumannfunc_ = NULL;
 
   }else if("cummins" == paramList.get<std::string> (TusastestNameString)){
-    
+
     numeqs_ = 2;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
 //     (*residualfunc_)[0] = &cummins::residual_heat_;
 //     (*residualfunc_)[1] = &cummins::residual_phase_;
@@ -1889,7 +1889,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::farzadi3d::residual_conc_farzadi_dp_;
     (*residualfunc_)[1] = tpetra::farzadi3d::residual_phase_farzadi_coupled_dp_;
-    (*residualfunc_)[2] = tpetra::goldak::residual_uncoupled_test_dp_;
+    (*residualfunc_)[2] = tpetra::goldak::residual_coupled_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::farzadi3d::prec_conc_farzadi_dp_;
@@ -1990,7 +1990,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::pfhub3::init_heat_pfhub3_;
     (*initfunc_)[1] = &tpetra::pfhub3::init_phase_pfhub3_;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::pfhub3::residual_heat_pfhub3_dp_;
     (*residualfunc_)[1] = tpetra::pfhub3::residual_phase_pfhub3_dp_;
@@ -2018,7 +2018,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::pfhub3::init_heat_pfhub3_;
     (*initfunc_)[1] = &tpetra::pfhub3::init_phase_pfhub3_;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::pfhub3::residual_heat_pfhub3_dp_;
     (*residualfunc_)[1] = tpetra::pfhub3::residual_phase_pfhub3_noise_;
@@ -2087,8 +2087,8 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
       (*varnames_)[4] = "eta3";
     }
 
-    // numeqs_ number of variables(equations) 
-    //dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_); 
+    // numeqs_ number of variables(equations)
+    //dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
     dirichletfunc_ = NULL;
 
     neumannfunc_ = NULL;
@@ -2119,24 +2119,24 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
 
 //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
 //               [numeq][nodeset id]
 //  [variable index][nodeset index]
-    //(*dirichletfunc_)[0][0] = &dbc_zero_;							 
-    //(*dirichletfunc_)[0][1] = &dbc_zero_;						 
-    //(*dirichletfunc_)[0][2] = &dbc_zero_;						 
+    //(*dirichletfunc_)[0][0] = &dbc_zero_;
+    //(*dirichletfunc_)[0][1] = &dbc_zero_;
+    //(*dirichletfunc_)[0][2] = &dbc_zero_;
     (*dirichletfunc_)[0][3] = &dbc_zero_;
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     neumannfunc_ = new std::vector<std::map<int,NBCFUNC>>(numeqs_);
     //neumannfunc_ = NULL;
-    //(*neumannfunc_)[0][0] = &nbc_one_;							 
-    (*neumannfunc_)[0][1] = &tpetra::robin::nbc_robin_test_;						 
-    //(*neumannfunc_)[0][1] = &nbc_zero_;						 
-    //(*neumannfunc_)[0][2] = &nbc_zero_;						 
+    //(*neumannfunc_)[0][0] = &nbc_one_;
+    (*neumannfunc_)[0][1] = &tpetra::robin::nbc_robin_test_;
+    //(*neumannfunc_)[0][1] = &nbc_zero_;
+    //(*neumannfunc_)[0][2] = &nbc_zero_;
     //(*neumannfunc_)[0][3] = &nbc_zero_;
 
     post_proc.push_back(new post_process(Comm,mesh_,(int)0));
@@ -2158,7 +2158,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     dirichletfunc_ = NULL;
 
     neumannfunc_ = NULL;
@@ -2191,7 +2191,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*varnames_)[2] = "ab";
     (*varnames_)[3] = "c";
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     dirichletfunc_ = NULL;
 
     neumannfunc_ = NULL;
@@ -2216,7 +2216,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*varnames_)[0] = "u1";
     (*varnames_)[1] = "u2";
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     dirichletfunc_ = NULL;
 
     neumannfunc_ = NULL;
@@ -2233,30 +2233,30 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
 
   }else if("goldak" == paramList.get<std::string> (TusastestNameString)){
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     numeqs_ = 1;
-    
+
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::goldak::residual_uncoupled_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::goldak::prec_test_dp_;
-    
+
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
-    
+
     initfunc_ = new  std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &tpetra::goldak::init_heat_;
-    
+
     dirichletfunc_ = NULL;
     //dirichletfunc_ = new std::vector<std::map<int,DBCFUNC>>(numeqs_);
-    
+
     //  cubit nodesets start at 1; exodus nodesets start at 0, hence off by one here
     //               [numeq][nodeset id]
-    //  [variable index][nodeset index]						 
-//     (*dirichletfunc_)[0][0] = &tpetra::goldak::dbc_;	
+    //  [variable index][nodeset index]
+//     (*dirichletfunc_)[0][0] = &tpetra::goldak::dbc_;
 //     (*dirichletfunc_)[0][1] = &tpetra::goldak::dbc_;
-//     (*dirichletfunc_)[0][2] = &tpetra::goldak::dbc_;					 
+//     (*dirichletfunc_)[0][2] = &tpetra::goldak::dbc_;
 //     (*dirichletfunc_)[0][3] = &tpetra::goldak::dbc_;
 
     paramfunc_.resize(3);
@@ -2264,7 +2264,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_[1] = &tpetra::radconvbc::param_;
     paramfunc_[2] = &tpetra::goldak::param_;
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
 //     neumannfunc_ = NULL;
     neumannfunc_ = new std::vector<std::map<int,NBCFUNC>>(numeqs_);
     (*neumannfunc_)[0][4] = &tpetra::radconvbc::nbc_;
@@ -2302,7 +2302,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*varnames_)[2] = "q2";
     (*varnames_)[3] = "q3";
 
-    // numeqs_ number of variables(equations) 
+    // numeqs_ number of variables(equations)
     dirichletfunc_ = NULL;
 
     neumannfunc_ = NULL;
@@ -2323,7 +2323,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     localprojectionindices_.push_back(3);
 
   } else {
-    auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+    auto comm_ = Teuchos::DefaultComm<int>::getComm();
     if( 0 == comm_->getRank() ){
       std::cout<<std::endl<<std::endl<<"Test case: "<<paramList.get<std::string> (TusastestNameString)
 	       <<" not found. (void ModelEvaluatorTPETRA<scalar_type>::set_test_case())" <<std::endl<<std::endl<<std::endl;
@@ -2332,22 +2332,22 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
   }
 
   if(numeqs_ > TUSAS_MAX_NUMEQS){
-    auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+    auto comm_ = Teuchos::DefaultComm<int>::getComm();
     if( 0 == comm_->getRank() ){
       std::cout<<std::endl<<std::endl<<"numeqs_ > TUSAS_MAX_NUMEQS; 1. increase TUSAS_MAX_NUMEQS to "
 	       <<numeqs_<<" ; 2. adjust TUSAS_MAX_NUMEQS_X_BASIS_NODES_PER_ELEM appropriately and recompile." <<std::endl<<std::endl<<std::endl;
     }
     exit(0);
-  } 
+  }
 
   //set the params in the test case now...
   Teuchos::ParameterList *problemList;
   problemList = &paramList.sublist ( "ProblemParams", false );
-  
+
   for( int k = 0; k <  paramfunc_.size(); k++ ){
     paramfunc_[k](problemList);
   }
-  
+
   if( 0 == comm_->getRank()){
 
     if(0 <  numeqs_){
@@ -2386,7 +2386,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
       std::cout<<"  dirichletfunc_ with size "<<dirichletfunc_->size()<<" found."<<std::endl;
 
       std::map<int,DBCFUNC>::iterator it;
-      
+
       for( int k = 0; k < numeqs_; k++ ){
 	for(it = (*dirichletfunc_)[k].begin();it != (*dirichletfunc_)[k].end(); ++it){
 	  int ns_id = it->first;
@@ -2405,7 +2405,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
       std::cout<<"  neumannfunc_ with size "<<neumannfunc_->size()<<" found."<<std::endl;
 
       std::map<int,NBCFUNC>::iterator it;
-      
+
       for( int k = 0; k < numeqs_; k++ ){
 	for(it = (*neumannfunc_)[k].begin();it != (*neumannfunc_)[k].end(); ++it){
 	  const int ss_id = it->first;
@@ -2419,7 +2419,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 	}//it
       }//k
     }//if
-    
+
     if(post_proc.size() > 0 ){
       std::cout<<"  post_proc with size "<<post_proc.size()<<" found."<<std::endl;
     }
@@ -2447,7 +2447,7 @@ int ModelEvaluatorTPETRA<scalar_type>:: update_mesh_data()
 {
   //std::cout<<"update_mesh_data()"<<std::endl;
 
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   //std::vector<int> node_num_map(mesh_->get_node_num_map());
 
   //cn 8-28-18 we need an overlap map with mpi, since shared nodes live
@@ -2515,7 +2515,7 @@ int ModelEvaluatorTPETRA<scalar_type>:: update_mesh_data()
 template<class scalar_type>
 void ModelEvaluatorTPETRA<scalar_type>::finalize()
 {
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   int mypid = comm_->getRank();
   int numproc = comm_->getSize();
 
@@ -2540,7 +2540,7 @@ void ModelEvaluatorTPETRA<scalar_type>::finalize()
     int numstep = numsteps_;
     std::cout<<std::endl
 	     <<"Total number of Newton iterations:     "<<nnewt_<<std::endl
-	     <<"Total number of GMRES iterations:      "<<ngmres<<std::endl 
+	     <<"Total number of GMRES iterations:      "<<ngmres<<std::endl
 	     <<"Total number of Timesteps:             "<<numstep<<std::endl
 	     <<"Average number of Newton per Timestep: "<<(float)nnewt_/(float)(numstep)<<std::endl
 	     <<"Average number of GMRES per Newton:    "<<(float)ngmres/(float)nnewt_<<std::endl
@@ -2548,14 +2548,14 @@ void ModelEvaluatorTPETRA<scalar_type>::finalize()
     if( dorestart ) std::cout<<"============THIS IS A RESTARTED RUN============"<<std::endl;
     std::ofstream outfile;
     outfile.open("jfnk.dat");
-    outfile 
+    outfile
       <<"Total number of Newton iterations:     "<<nnewt_<<std::endl
-      <<"Total number of GMRES iterations:      "<<ngmres<<std::endl 
+      <<"Total number of GMRES iterations:      "<<ngmres<<std::endl
       <<"Total number of Timesteps:             "<<numstep<<std::endl
       <<"Average number of Newton per Timestep: "<<(float)nnewt_/(float)(numstep)<<std::endl
       <<"Average number of GMRES per Newton:    "<<(float)ngmres/(float)nnewt_<<std::endl
-      <<"Average number of GMRES per Timestep:  "<<(float)ngmres/(float)(numstep)<<std::endl; 
-    if( dorestart ) outfile<<"============THIS IS A RESTARTED RUN============"<<std::endl;	
+      <<"Average number of GMRES per Timestep:  "<<(float)ngmres/(float)(numstep)<<std::endl;
+    if( dorestart ) outfile<<"============THIS IS A RESTARTED RUN============"<<std::endl;
     outfile.close();
   }
 
@@ -2593,7 +2593,7 @@ template<class scalar_type>
 {
   //cn we need to get u_old_ and u_old_old_
   //and start_time and start_step and modify time_
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   const int mypid = comm_->getRank();
   const int numproc = comm_->getSize();
   if( 0 == mypid )
@@ -2605,7 +2605,7 @@ template<class scalar_type>
     ex_id_ = mesh_->open_exodus(outfilename.c_str(),Mesh::READ);
 
     std::cout<<"  Opening file for restart; ex_id_ = "<<ex_id_<<" filename = "<<outfilename<<std::endl;
-    
+
   }
   else{
     std::string decompPath="decomp/";
@@ -2614,10 +2614,10 @@ template<class scalar_type>
 
     outfilename = decompPath+"results.e."+std::to_string(numproc)+"."+mypidstring;
     ex_id_ = mesh_->open_exodus(outfilename.c_str(),Mesh::READ);
-    
+
     std::cout<<"  Opening file for restart; ex_id_ = "<<ex_id_<<" filename = "<<outfilename<<std::endl;
 
-    //cn we want to check the number of procs listed in the nem file as well    
+    //cn we want to check the number of procs listed in the nem file as well
     int nem_proc = -99;
     int error = mesh_->read_num_proc_nemesis(ex_id_, &nem_proc);
     if( 0 > error ) {
@@ -2696,7 +2696,7 @@ template<class scalar_type>
 
   mesh_->close_exodus(ex_id_);
 
-  //cn for now just put current values into old values, 
+  //cn for now just put current values into old values,
   //cn ie just start with an initial condition
 
   //cn lets not worry about two different time steps for normal simulations
@@ -2795,7 +2795,7 @@ void ModelEvaluatorTPETRA<Scalar>::temporalpostprocess(boost::ptr_vector<post_pr
   std::vector<double> uuold(numeqs);
   std::vector<double> uuoldold(numeqs);
   std::vector<double> ug(numeqs);
-  
+
   //right now for cuda, do this on cpu since the function pointer is buried in another class
   //and it takes very little percentage of time
   //another approach would be to use tpetra vectors here
@@ -2830,10 +2830,10 @@ void ModelEvaluatorTPETRA<Scalar>::init_P_()
 {
 
   //this could be done with Tpetra::replaceDiagonalCrsMatrix( 	::Tpetra::CrsMatrix< SC, LO, GO, NT > &  	matrix,
-  //		const ::Tpetra::Vector< SC, LO, GO, NT > &  	newDiag 
-  //	) 	
+  //		const ::Tpetra::Vector< SC, LO, GO, NT > &  	newDiag
+  //	)
 
-    P_->setAllToScalar((scalar_type)-1.0); 
+    P_->setAllToScalar((scalar_type)-1.0);
 
     Teuchos::RCP<vector_type > d = Teuchos::rcp(new vector_type(x_owned_map_));
     d->putScalar((Scalar)27.);
@@ -2846,7 +2846,7 @@ void ModelEvaluatorTPETRA<Scalar>::init_P_()
 template<class Scalar>
 double ModelEvaluatorTPETRA<Scalar>::estimatetimestep()
 {
-  auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+  auto comm_ = Teuchos::DefaultComm<int>::getComm();
   double dtpred = 0.;
   //std::cout<<std::setprecision(std::numeric_limits<double>::digits10 + 1);
   Teuchos::ParameterList *atsList;
@@ -2860,24 +2860,24 @@ double ModelEvaluatorTPETRA<Scalar>::estimatetimestep()
   const double eps = atsList->get<double>(TusasatsepsNameString);
   const double dtmax = atsList->get<double>(TusasatsmaxdtNameString);
 
-  temporalpostprocess(temporal_est); 
+  temporalpostprocess(temporal_est);
   boost::ptr_vector<post_process>::iterator itp;
   for(itp = temporal_est.begin();itp != temporal_est.end();++itp){
     itp->scalar_reduction();
   }
 
   //norm for rtol
-  temporalpostprocess(temporal_norm); 
+  temporalpostprocess(temporal_norm);
   for(itp = temporal_norm.begin();itp != temporal_norm.end();++itp){
     itp->scalar_reduction();
   }
-  
+
   std::vector<double> maxdt(numeqs_);
   std::vector<double> mindt(numeqs_);
   std::vector<double> newdt(numeqs_);
   std::vector<double> error(numeqs_);
   std::vector<double> norm(numeqs_,0.);
-  
+
   if( 0 == comm_->getRank()){
     std::cout<<std::endl<<"     Estimating timestep size:"<<std::endl;
     std::cout<<"     using "<<atsList->get<std::string> (TusasatstypeNameString)
@@ -2936,12 +2936,12 @@ double ModelEvaluatorTPETRA<Scalar>::estimatetimestep()
   dtpred = *min_element(newdt.begin(), newdt.end());
 
   if( 0 == comm_->getRank()){
-    std::cout<<std::endl<<"     Estimated timestep size : "<<dtpred<<std::endl;	
+    std::cout<<std::endl<<"     Estimated timestep size : "<<dtpred<<std::endl;
   }
   dtpred = std::min(dtpred,dtmax);
   if( 0 == comm_->getRank()){
-    std::cout<<std::endl<<"           min(dtpred,dtmax) : "<<dtpred<<std::endl<<std::endl;	
-  }  
+    std::cout<<std::endl<<"           min(dtpred,dtmax) : "<<dtpred<<std::endl<<std::endl;
+  }
   return dtpred;
 }
 
@@ -2953,7 +2953,7 @@ void ModelEvaluatorTPETRA<Scalar>::predictor()
 
   auto comm_ = Teuchos::DefaultComm<int>::getComm();
   if( 0 == comm_->getRank()){
-    std::cout<<std::endl<<std::endl<<std::endl<<"     Predictor step started"<<std::endl;	
+    std::cout<<std::endl<<std::endl<<std::endl<<"     Predictor step started"<<std::endl;
   }
 
   //we might turn off the forcing term temporaily here
@@ -2974,10 +2974,10 @@ void ModelEvaluatorTPETRA<Scalar>::predictor()
     NOX::StatusTest::StatusType solvStatus = predictor_->solve();
   }
 
-  const Thyra::VectorBase<double> * sol = 
+  const Thyra::VectorBase<double> * sol =
     &(dynamic_cast<const NOX::Thyra::Vector&>(predictor_->getSolutionGroup().getX()
 					      ).getThyraVector()
-      );    
+      );
   Thyra::ConstDetachedSpmdVectorView<double> x_vec(sol->col(0));
   Teuchos::ArrayRCP<const scalar_type> vals = x_vec.values();
 
@@ -2992,7 +2992,7 @@ void ModelEvaluatorTPETRA<Scalar>::predictor()
       predtempview[numeqs_*nn+k]=vals[numeqs_*nn+k];
     }
   }
-		       );//parallel_for 
+		       );//parallel_for
 
   t_theta_ = t_theta_temp;
   t_theta2_ = 0.;
@@ -3005,39 +3005,39 @@ void ModelEvaluatorTPETRA<Scalar>::predictor()
 
 template<class Scalar>
 void ModelEvaluatorTPETRA<Scalar>::initialsolve()
- {     
-   auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
+ {
+   auto comm_ = Teuchos::DefaultComm<int>::getComm();
    //right now, for TR it doesn't really matter in turns of performance if we set theta to 1
    //here or leave it at .5
    const double t_theta_temp = t_theta_;
    t_theta_ = 1.;
-   
+
    t_theta2_ = 0.;
-   
-   if( 0 == comm_->getRank()) 
+
+   if( 0 == comm_->getRank())
      std::cout<<std::endl<<"Performing initial NOX solve"<<std::endl<<std::endl;
-   
+
    Teuchos::RCP< ::Thyra::VectorBase< double > > guess = Thyra::createVector(u_old_,x_space_);
    NOX::Thyra::Vector thyraguess(*guess);//by sending the dereferenced pointer, we instigate a copy rather than a view
    solver_->reset(thyraguess);
-   
+
    Teuchos::TimeMonitor NSolveTimer(*ts_time_nsolve);
    NOX::StatusTest::StatusType solvStatus = solver_->solve();
    if( !(NOX::StatusTest::Converged == solvStatus)) {
      std::cout<<" NOX solver failed to converge. Status = "<<solvStatus<<std::endl<<std::endl;
      exit(0);
    }
-    
-   if( 0 == comm_->getRank()) 
+
+   if( 0 == comm_->getRank())
      std::cout<<std::endl<<"Initial NOX solve completed"<<std::endl<<std::endl;
-   const Thyra::VectorBase<double> * sol = 
+   const Thyra::VectorBase<double> * sol =
      &(dynamic_cast<const NOX::Thyra::Vector&>(
 					       solver_->getSolutionGroup().getX()
 					       ).getThyraVector());
-   
+
    Thyra::ConstDetachedSpmdVectorView<double> x_vec(sol->col(0));
     Teuchos::ArrayRCP<const scalar_type> vals = x_vec.values();
-   
+
    //now,
    //dudt(t=0) = (x_vec-u_old_)/dt_
    //
@@ -3051,13 +3051,13 @@ void ModelEvaluatorTPETRA<Scalar>::initialsolve()
   //for (int nn=0; nn <  num_owned_nodes_; nn++) {//cn figure out a better way here...
   Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0,num_owned_nodes_),[=](const int& nn){
      for( int k = 0; k < numeqs_; k++ ){
-       
+
        uoldoldview[numeqs_*nn+k] = 2.*uoldview[numeqs_*nn+k] - vals[numeqs_*nn+k];
-   
+
      }
    }
 		       );
-   
+
    t_theta_ = t_theta_temp;
  }
 
@@ -3073,10 +3073,10 @@ void ModelEvaluatorTPETRA<Scalar>::setadaptivetimestep()
       for( int k = 0; k < numeqs_; k++ ){
 	temporal_est.push_back(new post_process(Comm,
 						mesh_,
-						k, 
+						k,
 						post_process::NORMRMS,
-						dorestart, 
-						k, 
+						dorestart,
+						k,
 						"temperror",
 						16));
 	//be with an error estimate based on second derivative
@@ -3092,7 +3092,7 @@ void ModelEvaluatorTPETRA<Scalar>::setadaptivetimestep()
 	//see gresho for a wierd ab way for this--can use regular ab
 
 	//and possibly tr with an explicit midpoint rule (huen) predictor: huen-tr
-	//(we could use initial solve above 
+	//(we could use initial solve above
 	//with better update to get
 	//(up_n+1 - u_n-1)/(2 dt) = f(t_n)
 	//with error = - (u_n+1 - up_n+1)/5
@@ -3101,10 +3101,10 @@ void ModelEvaluatorTPETRA<Scalar>::setadaptivetimestep()
 
 	temporal_norm.push_back(new post_process(Comm,
 						 mesh_,
-						 k, 
-						 post_process::NORMRMS, 
+						 k,
+						 post_process::NORMRMS,
 						 dorestart,
-						 k, 
+						 k,
 						 "tempnorm",
 						 16));
  	temporal_norm[k].postprocfunc_ = &timeadapt::normu_;
