@@ -6442,6 +6442,8 @@ RES_FUNC_TPETRA(residual_phase_farzadi_uncoupled_)
   const double g4[3] = {((dT < 0.001) ? G*(xx-R*tt[0])/delta_T0 : dT),
 			     ((dT < 0.001) ? G*(xx-R*tt[1])/delta_T0 : dT),
 			     ((dT < 0.001) ? G*(xx-R*tt[2])/delta_T0 : dT)};
+				 
+  //std::cout << g4[0] << std::endl;
   
   const double hp1g4[3] = {lambda*(1. - phi[0]*phi[0])*(1. - phi[0]*phi[0])*(g4[0])*test,
 			 lambda*(1. - phi[1]*phi[1])*(1. - phi[1]*phi[1])*(g4[1])*test,
@@ -6493,7 +6495,7 @@ RES_FUNC_TPETRA(residual_phase_farzadi_coupled_)
   const double theta[3] = {basis[theta_id]->uu,basis[theta_id]->uuold,basis[theta_id]->uuoldold};
   
   const double g4[3] = {theta[0],theta[1],theta[2]};
-  
+    
   const double hp1g4[3] = {lambda*(1. - phi[0]*phi[0])*(1. - phi[0]*phi[0])*(g4[0])*test,
 			 lambda*(1. - phi[1]*phi[1])*(1. - phi[1]*phi[1])*(g4[1])*test,
 			 lambda*(1. - phi[2]*phi[2])*(1. - phi[2]*phi[2])*(g4[2])*test};
@@ -7981,22 +7983,25 @@ INI_FUNC(init_conc_farzadi_)
 INI_FUNC(init_phase_farzadi_)
 {
 
-  double h = tpetra::farzadi3d::base_height + tpetra::farzadi3d::amplitude*((double)rand()/(RAND_MAX));
+  //double h = tpetra::farzadi3d::base_height + tpetra::farzadi3d::amplitude*((double)rand()/(RAND_MAX));
+  //double c = (x-tpetra::farzadi3d::x0)*(x-tpetra::farzadi3d::x0) + (y-tpetra::farzadi3d::y0)*(y-tpetra::farzadi3d::y0) + (z-tpetra::farzadi3d::z0)*(z-tpetra::farzadi3d::z0);
+  //return ((tpetra::farzadi3d::C == 0) ? (tanh((h-x)/sqrt(2.))) : (c < tpetra::farzadi3d::r*tpetra::farzadi3d::r) ? 1. : -1.);	
   
-  double c = (x-tpetra::farzadi3d::x0)*(x-tpetra::farzadi3d::x0) + (y-tpetra::farzadi3d::y0)*(y-tpetra::farzadi3d::y0) + (z-tpetra::farzadi3d::z0)*(z-tpetra::farzadi3d::z0);
-  
-  return ((tpetra::farzadi3d::C == 0) ? (tanh((h-x)/sqrt(2.))) : (c < tpetra::farzadi3d::r*tpetra::farzadi3d::r) ? 1. : -1.);	
+  double h = 40.;
+  return (tanh((h-z)/sqrt(2.)));
 }
 
 INI_FUNC(init_heat_)
 {
-  const double val = (300.-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+  double init_temp = 1700.0;
+  const double val = (init_temp-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
 
 DBC_FUNC(dbc_) 
 {
-  const double val = (300.-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+  double init_temp = 1700.0;
+  const double val = (init_temp-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
 
