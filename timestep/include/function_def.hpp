@@ -6464,6 +6464,18 @@ RES_FUNC_TPETRA(residual_phase_farzadi_uncoupled_)
     + (1.-t_theta2_)*t_theta_*hp1g4[0]/mob[0]
     + (1.-t_theta2_)*(1.-t_theta_)*hp1g4[1]/mob[1]
     +.5*t_theta2_*((2.+dt_/dtold_)*hp1g4[1]/mob[1]-dt_/dtold_*hp1g4[2]/mob[2]);
+	
+	// TESTING
+    if (basis[eqn_id]->xx > 40.0 && basis[eqn_id]->xx < 40.2){
+  	  if (basis[eqn_id]->yy > 0.0 && basis[eqn_id]->yy < 0.2 ){
+		  if (basis[eqn_id]->zz > 0.0 && basis[eqn_id]->zz < 0.2 ){
+  			//std::cout << mob[0]*rv << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+			std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+
+		}
+  	  }
+    }
+    // END TESTING
 
   return mob[0]*rv;
 }
@@ -6515,6 +6527,17 @@ RES_FUNC_TPETRA(residual_phase_farzadi_coupled_)
     + (1.-t_theta2_)*t_theta_*hp1g4[0]/mob[0]
     + (1.-t_theta2_)*(1.-t_theta_)*hp1g4[1]/mob[1]
     +.5*t_theta2_*((2.+dt_/dtold_)*hp1g4[1]/mob[1]-dt_/dtold_*hp1g4[2]/mob[2]);
+
+	// TESTING
+	if (basis[eqn_id]->zz > 40.0 && basis[eqn_id]->zz < 40.2){
+		if (basis[eqn_id]->yy > 0.0 && basis[eqn_id]->yy < 0.2 ){
+			if (basis[eqn_id]->xx > 0.0 && basis[eqn_id]->xx < 0.2 ){
+		  		//std::cout << mob[0]*rv << " " << theta[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+				std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+	  		}
+		}
+	}
+	// END TESTING
 
   return mob[0]*rv;
 }
