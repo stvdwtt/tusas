@@ -6466,15 +6466,17 @@ RES_FUNC_TPETRA(residual_phase_farzadi_uncoupled_)
     +.5*t_theta2_*((2.+dt_/dtold_)*hp1g4[1]/mob[1]-dt_/dtold_*hp1g4[2]/mob[2]);
 	
 	// TESTING
+	/*
     if (basis[eqn_id]->xx > 40.0 && basis[eqn_id]->xx < 40.2){
   	  if (basis[eqn_id]->yy > 0.0 && basis[eqn_id]->yy < 0.2 ){
 		  if (basis[eqn_id]->zz > 0.0 && basis[eqn_id]->zz < 0.2 ){
   			//std::cout << mob[0]*rv << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
-			std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+			//std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
 
 		}
   	  }
     }
+	*/
     // END TESTING
 
   return mob[0]*rv;
@@ -6533,7 +6535,7 @@ RES_FUNC_TPETRA(residual_phase_farzadi_coupled_)
 		if (basis[eqn_id]->yy > 0.0 && basis[eqn_id]->yy < 0.2 ){
 			if (basis[eqn_id]->xx > 0.0 && basis[eqn_id]->xx < 0.2 ){
 		  		//std::cout << mob[0]*rv << " " << theta[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
-				std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
+				//std::cout << hp1g4[0] << " " << basis[eqn_id]->xx << " " << basis[eqn_id]->yy << " " << basis[eqn_id]->zz <<  std::endl;
 	  		}
 		}
 	}
@@ -7663,9 +7665,12 @@ NBC_FUNC_TPETRA(nbc_)
   const double f[3] = {(h*(ti-u)+ep*sigma*(ti*ti*ti*ti-u*u*u*u))*test,
 		       (h*(ti-uold)+ep*sigma*(ti*ti*ti*ti-uold*uold*uold*uold))*test,
 		       (h*(ti-uoldold)+ep*sigma*(ti*ti*ti*ti-uoldold*uoldold*uoldold*uoldold))*test};
-  return (1.-t_theta2_)*t_theta_*f[0]
+	
+	double scaling_parameter = 1.0e-13;		   
+  double rv = (1.-t_theta2_)*t_theta_*f[0]
     +(1.-t_theta2_)*(1.-t_theta_)*f[1]
     +.5*t_theta2_*((2.+dt_/dtold_)*f[1]-dt_/dtold_*f[2]);
+  return rv * scaling_parameter;
 }
 
 INI_FUNC(init_heat_)
@@ -7726,6 +7731,8 @@ TUSAS_DEVICE
 double tau0_d = 1.;
 TUSAS_DEVICE
 double W0_d = 1.;
+TUSAS_DEVICE
+double t0_d = 300.0;
 
 KOKKOS_INLINE_FUNCTION 
 void dfldt_uncoupled(GPUBasis * basis[], const int index, const double dt_, const double dtold_, double *a)
@@ -7772,16 +7779,19 @@ const double P(const double t)
   const double t_hold = t_hold_d/tau0_d;
   const double t_decay = t_decay_d/tau0_d;
   const double tt = t/tau0_d;
+    
   return (tt < t_hold) ? P_d : 
     ((tt<t_hold+t_decay) ? P_d*(tt-(t_hold+t_decay))/(-t_decay)
      :0.);
+	 
 }
 
 KOKKOS_INLINE_FUNCTION 
 const double qdot(const double &x, const double &y, const double &z, const double &t)
 {
 
-  const double p = P(t);
+  const double p = P(t);		
+  
   //s_d = 2 below; we can simplify this expression 5.19615=3^1.5
   const double r = r_d;// /W0_d;
   const double d = d_d;// /W0_d;
@@ -7794,6 +7804,15 @@ const double qdot(const double &x, const double &y, const double &z, const doubl
   const double f = exp( -3.* exparg );
   //std::cout<<W0_d*x<<std::endl;
   //if(f > 0.) std::cout<<f<<" "<<coef<<" "<<coef*f<<std::endl;
+  
+  /*
+  if (z > 90.0){
+	  //std::cout << "Source: " << x << " " << y << " " << z << " " << t << " " << p << " " << coef << " " << f << std::endl;
+	  std::cout << "Source: " << W0_d << " " << exparg << " " << W0_d*x << " " << x0_d << " " << W0_d*y << " " << y0_d << " " << W0_d*z << " " << z0_d << " " << r << " " << d << std::endl;
+  }
+*/
+  
+
   return coef*f;
 }
 
@@ -7893,7 +7912,8 @@ RES_FUNC_TPETRA(residual_coupled_test_)
 		     +.5*t_theta2_*((2.+dt_/dtold_)*dfldt[1]-dt_/dtold_*dfldt[2]));
   
   //return rv*tau0_d/tpetra::heat::deltau_h;
-  return rv;
+  double scaling_parameter = 1.0e-13;
+  return rv*scaling_parameter;
 }
 
 TUSAS_DEVICE
@@ -7909,8 +7929,8 @@ PRE_FUNC_TPETRA(prec_test_)
 						      dt_,
 						      t_theta_,
 						      eqn_id);
-
-  return val;// /tpetra::heat::rho_d/tpetra::heat::cp_d;
+  double scaling_parameter = 1.0e-13;
+  return val*scaling_parameter;// /tpetra::heat::rho_d/tpetra::heat::cp_d;
 }
 
 TUSAS_DEVICE
@@ -7918,13 +7938,13 @@ PRE_FUNC_TPETRA((*prec_test_dp_)) = prec_test_;
 
 INI_FUNC(init_heat_)
 {
-  const double val = (300.-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+  const double val = (tpetra::goldak::t0_d-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
 
 DBC_FUNC(dbc_) 
 {
-  const double val = (300.-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+  const double val = (tpetra::goldak::t0_d-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
 
@@ -7990,6 +8010,8 @@ PARAM_FUNC(param_)
   t_decay_d = plist->get<double>("t_decay_",0.01);
   tau0_d = plist->get<double>("tau0_",1.);
   W0_d = plist->get<double>("W0_",1.);
+  
+  t0_d = plist->get<double>("t0_",300.0);
 
   dfldu_mushy_d = tpetra::heat::rho_d*Lf/(tl-te); //fl=(t-te)/(tl-te);
 }
@@ -8016,14 +8038,14 @@ INI_FUNC(init_phase_farzadi_)
 
 INI_FUNC(init_heat_)
 {
-  double init_temp = 1700.0;
+  double init_temp = tpetra::goldak::t0_d;
   const double val = (init_temp-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
 
 DBC_FUNC(dbc_) 
 {
-  double init_temp = 1700.0;
+  double init_temp = tpetra::goldak::t0_d;
   const double val = (init_temp-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
   return val;
 }
