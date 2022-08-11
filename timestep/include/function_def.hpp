@@ -7289,8 +7289,14 @@ TUSAS_DEVICE
 const double pi_d = 3.141592653589793;
 const double pi_h = 3.141592653589793;
 
+TUSAS_DEVICE
+double te_d = 1641.;
 double te = 1641.;
+TUSAS_DEVICE
+double tl_d = 1706.;
 double tl = 1706.;
+TUSAS_DEVICE
+double Lf_d = 2.95e5;
 double Lf = 2.95e5;
 TUSAS_DEVICE
 double dfldu_mushy_d = 0.0;//fl=(t-te)/(tl-te);
