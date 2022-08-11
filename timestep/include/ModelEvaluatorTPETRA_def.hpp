@@ -587,6 +587,9 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     }else if("goldak" == testname){
       //cudaMemcpyFromSymbol( &h_rf[0], tpetra::goldak::residual_test_dp_, sizeof(RESFUNC));
       testcase = 8;
+  }else if("fullycoupled" == testname){
+      //cudaMemcpyFromSymbol( &h_rf[0], tpetra::goldak::residual_test_dp_, sizeof(RESFUNC));
+      testcase = 9;
 
     } else {
       if( 0 == comm_->getRank() ){
@@ -634,7 +637,12 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	}else if (testcase == 8){
 	  rf[0] = tpetra::goldak::residual_test_;
 	  //rf[1] = tpetra::goldak::residual_test_;
+    }else if (testcase == 9){
+      rf[0] = tpetra::farzadi3d::residual_conc_farzadi_activated_dp_;
+      rf[1] = tpetra::farzadi3d::residual_phase_farzadi_coupled_activated_dp_;
+      rf[2] = tpetra::goldak::residual_coupled_test_dp_;
 	}else{
+      std::cout << "Error: exiting!" << std::endl;
 	  exit(0);
 	}
 
@@ -956,6 +964,9 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     }else if("goldak" == paramList.get<std::string> (TusastestNameString)){
       //cudaMemcpyFromSymbol( &h_pf[0], tpetra::heat::prec_heat_test_dp_, sizeof(PREFUNC));
       testcase = 8;
+    }else if("fullycoupled" == paramList.get<std::string> (TusastestNameString)){
+        //cudaMemcpyFromSymbol( &h_pf[0], tpetra::heat::prec_heat_test_dp_, sizeof(PREFUNC));
+        testcase = 9;
 
     } else {
       if( 0 == comm_->getRank() ){
@@ -1000,7 +1011,12 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  pf[1] = tpetra::farzadi3d::prec_phase_farzadi_;
 	}else if (testcase == 8){
 	  pf[0] = tpetra::goldak::prec_test_;
+    }else if (testcase == 9){
+      pf[0] = tpetra::farzadi3d::prec_conc_farzadi_dp_;
+      pf[1] = tpetra::farzadi3d::prec_phase_farzadi_dp_;
+      pf[2] = tpetra::goldak::prec_test_dp_;
 	}else{
+      std::cout << "Error: exiting! (preconditioner)" << std::endl;
 	  exit(0);
 	}
 #ifdef TUSAS3D	
@@ -1211,6 +1227,8 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   builder.setPreconditioningStrategyFactory(Teuchos::abstractFactoryStd<Base,Impl>(), "MueLu");
   //#endif
   builder.setParameterList(lsparams);
+  
+  std::cout << "a" << std::endl;
 
   if( 0 == mypid )
     builder.getParameterList()->print(std::cout);
@@ -1231,6 +1249,8 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
     initial_guess = this->getNominalValues().get_x()->clone_v();
 
   Thyra::V_S(initial_guess.ptr(),Teuchos::ScalarTraits<double>::one());
+  
+  std::cout << "b" << std::endl;
 
   // Create the JFNK operator
   Teuchos::ParameterList printParams;//cn this is empty??? for now
@@ -1246,6 +1266,9 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   // Wrap the model evaluator in a JFNK Model Evaluator
   Teuchos::RCP< ::Thyra::ModelEvaluator<double> > thyraModel =
     Teuchos::rcp(new NOX::MatrixFreeModelEvaluatorDecorator<double>(Model));
+    
+    std::cout << "c" << std::endl;
+
 
   // Wrap the model evaluator in a JFNK Model Evaluator
 //   Teuchos::RCP< ::Thyra::ModelEvaluator<double> > thyraModel =
@@ -1267,6 +1290,8 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   }
 
   nox_group->computeF();
+  
+  std::cout << "d" << std::endl;
 
   // VERY IMPORTANT!!!  jfnk object needs base evaluation objects.
   // This creates a circular dependency, so use a weak pointer.
@@ -1279,6 +1304,8 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
 
   double relrestol = 1.0e-6;
   relrestol = paramList.get<double> (TusasnoxrelresNameString);
+  
+  std::cout << "e" << std::endl;
 
   Teuchos::RCP<NOX::StatusTest::NormF> relresid = 
     Teuchos::rcp(new NOX::StatusTest::NormF(*nox_group.get(), relrestol));
@@ -1304,6 +1331,9 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   //combo->addStatusTest(fv);
   combo->addStatusTest(converged);
   combo->addStatusTest(maxiters);
+  
+  std::cout << "f" << std::endl;
+
 
   Teuchos::RCP<Teuchos::ParameterList> nl_params =
     Teuchos::rcp(new Teuchos::ParameterList(paramList.sublist(TusasnlsNameString)));
@@ -1357,6 +1387,9 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
       converged1->addStatusTest(relresid1);
       converged1->addStatusTest(maxiters1);
       //combo->addStatusTest(converged);
+      
+      std::cout << "g" << std::endl;
+
       
       Teuchos::RCP<Teuchos::ParameterList> nl_params1 =
 	Teuchos::rcp(new Teuchos::ParameterList);
@@ -1881,7 +1914,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
     (*residualfunc_)[0] = tpetra::farzadi3d::residual_conc_farzadi_dp_;
-    (*residualfunc_)[1] = tpetra::farzadi3d::residual_phase_farzadi_dp_;
+    (*residualfunc_)[1] = tpetra::farzadi3d::residual_phase_farzadi_uncoupled_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = tpetra::farzadi3d::prec_conc_farzadi_dp_;
@@ -1892,12 +1925,60 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*varnames_)[1] = "phi";
 
     dirichletfunc_ = NULL;
+    
+    post_proc.push_back(new post_process(Comm,mesh_,(int)0));
+    post_proc[0].postprocfunc_ = &tpetra::farzadi3d::postproc_c_;
+    post_proc.push_back(new post_process(Comm,mesh_,(int)1));
+    post_proc[1].postprocfunc_ = &tpetra::farzadi3d::postproc_t_;
 
     paramfunc_.resize(1);
     paramfunc_[0] = &tpetra::farzadi3d::param_;
     //paramfunc_ = &farzadi::param_;
 
     neumannfunc_ = NULL;
+    
+}else if("fullycoupled" == paramList.get<std::string> (TusastestNameString)){
+
+    if(paramList.get<double> (TusasthetaNameString) < .49) exit(0);
+
+    numeqs_ = 3;
+
+    initfunc_ = new  std::vector<INITFUNC>(numeqs_);
+    (*initfunc_)[0] = &tpetra::fullycoupled::init_conc_farzadi_;
+    (*initfunc_)[1] = &tpetra::fullycoupled::init_phase_farzadi_;
+    (*initfunc_)[2] = &tpetra::fullycoupled::init_heat_;
+
+    residualfunc_ = new std::vector<RESFUNC>(numeqs_);
+    (*residualfunc_)[0] = tpetra::farzadi3d::residual_conc_farzadi_activated_dp_;
+    (*residualfunc_)[1] = tpetra::farzadi3d::residual_phase_farzadi_coupled_activated_dp_;
+    (*residualfunc_)[2] = tpetra::goldak::residual_coupled_test_dp_;
+
+    preconfunc_ = new std::vector<PREFUNC>(numeqs_);
+    (*preconfunc_)[0] = tpetra::farzadi3d::prec_conc_farzadi_dp_;
+    (*preconfunc_)[1] = tpetra::farzadi3d::prec_phase_farzadi_dp_;
+    (*preconfunc_)[2] = tpetra::goldak::prec_test_dp_;
+
+    varnames_ = new std::vector<std::string>(numeqs_);
+    (*varnames_)[0] = "u";
+    (*varnames_)[1] = "phi";
+    (*varnames_)[2] = "theta";
+
+    dirichletfunc_ = NULL;
+
+    post_proc.push_back(new post_process(Comm,mesh_,(int)0));
+    post_proc[0].postprocfunc_ = &tpetra::farzadi3d::postproc_c_;
+    post_proc.push_back(new post_process(Comm,mesh_,(int)1));
+    post_proc[1].postprocfunc_ = &tpetra::fullycoupled::postproc_t_;
+
+    paramfunc_.resize(5);
+    paramfunc_[0] = &tpetra::farzadi3d::param_;
+    paramfunc_[1] = &tpetra::heat::param_;
+    paramfunc_[2] = &tpetra::radconvbc::param_;
+    paramfunc_[3] = &tpetra::goldak::param_;
+    paramfunc_[4] = &tpetra::fullycoupled::param_;
+
+    neumannfunc_ = new std::vector<std::map<int,NBCFUNC>>(numeqs_);
+    (*neumannfunc_)[2][4] = &tpetra::radconvbc::nbc_;
 
   }else if("farzadiexp" == paramList.get<std::string> (TusastestNameString)){
     //farzadi test
@@ -2153,11 +2234,10 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     numeqs_ = 1;
     
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
-    //(*residualfunc_)[0] = &tusastpetra::residual_heat_test_;
-    (*residualfunc_)[0] = tpetra::goldak::residual_test_dp_;
+    (*residualfunc_)[0] = tpetra::goldak::residual_uncoupled_test_dp_;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
-    (*preconfunc_)[0] = tpetra::heat::prec_heat_test_dp_;
+    (*preconfunc_)[0] = tpetra::goldak::prec_test_dp_;
     
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "u";
@@ -2181,9 +2261,6 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_[0] = &tpetra::heat::param_;
     paramfunc_[1] = &tpetra::radconvbc::param_;
     paramfunc_[2] = &tpetra::goldak::param_;
-
-    // numeqs_ number of variables(equations) 
-//     neumannfunc_ = NULL;
     
     neumannfunc_ = new std::vector<std::map<int,NBCFUNC>>(numeqs_);	 
     (*neumannfunc_)[0][4] = &tpetra::radconvbc::nbc_;
@@ -2192,7 +2269,6 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     post_proc[0].postprocfunc_ = &tpetra::goldak::postproc_qdot_;
     post_proc.push_back(new post_process(Comm,mesh_,(int)1, post_process::MAXVALUE));
     post_proc[1].postprocfunc_ = &tpetra::goldak::postproc_u_;
-
 
   } else {
     auto comm_ = Teuchos::DefaultComm<int>::getComm(); 
