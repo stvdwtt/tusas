@@ -5576,8 +5576,6 @@ TUSAS_DEVICE
 double W0_d = 1.;
 TUSAS_DEVICE
 double deltau_d = 1.;
-TUSAS_DEVICE
-double uref_d = 0.;
 
 double k_h = 2.;
 double rho_h = 1.;
@@ -5587,7 +5585,6 @@ double tau0_h = 1.;
 double W0_h = 1.;
 
 double deltau_h = 1.;
-double uref_h = 0.;
 
 
   //KOKKOS_INLINE_FUNCTION 
@@ -5612,21 +5609,19 @@ RES_FUNC_TPETRA(residual_heat_test_)
 {
   //printf("here\n");
   //printf("%lf %lf %lf\n",rho_d,cp_d,k_d);
-   const double ut = rho_d*cp_d*(basis[eqn_id].uu()-basis[eqn_id].uuold())/dt_*basis[eqn_id].phi(i);
-   const double f[3] = {k_d*(basis[eqn_id].dudx()*basis[eqn_id].dphidx(i)
-			     + basis[eqn_id].dudy()*basis[eqn_id].dphidy(i)
-			     + basis[eqn_id].dudz()*basis[eqn_id].dphidz(i)),
-			k_d*(basis[eqn_id].duolddx()*basis[eqn_id].dphidx(i)
-			     + basis[eqn_id].duolddy()*basis[eqn_id].dphidy(i)
-			     + basis[eqn_id].duolddz()*basis[eqn_id].dphidz(i)),
-			k_d*(basis[eqn_id].duoldolddx()*basis[eqn_id].dphidx(i)
-			     + basis[eqn_id].duoldolddy()*basis[eqn_id].dphidy(i)
-			     + basis[eqn_id].duoldolddz()*basis[eqn_id].dphidz(i))};
-
+  const double ut = rho_d*cp_d/tau0_d*deltau_d*(basis[eqn_id].uu()-basis[eqn_id].uuold())/dt_*basis[eqn_id].phi(i);
+  const double f[3] = {k_d/W0_d/W0_d*deltau_d*(basis[eqn_id].dudx()*basis[eqn_id].dphidx(i)
+			  + basis[eqn_id].dudy()*basis[eqn_id].dphidy(i)
+			  + basis[eqn_id].dudz()*basis[eqn_id].dphidz(i)),
+			 k_d/W0_d/W0_d*deltau_d*(basis[eqn_id].duolddx()*basis[eqn_id].dphidx(i)
+			  + basis[eqn_id].duolddy()*basis[eqn_id].dphidy(i)
+			  + basis[eqn_id].duolddz()*basis[eqn_id].dphidz(i)),
+			 k_d/W0_d/W0_d*deltau_d*(basis[eqn_id].duoldolddx()*basis[eqn_id].dphidx(i)
+			  + basis[eqn_id].duoldolddy()*basis[eqn_id].dphidy(i)
+			  + basis[eqn_id].duoldolddz()*basis[eqn_id].dphidz(i))};
   return ut + (1.-t_theta2_)*t_theta_*f[0]
-    + (1.-t_theta2_)*(1.-t_theta_)*f[1]
-    +.5*t_theta2_*((2.+dt_/dtold_)*f[1]-dt_/dtold_*f[2]);
-  //return 0.;
+   + (1.-t_theta2_)*(1.-t_theta_)*f[1]
+   +.5*t_theta2_*((2.+dt_/dtold_)*f[1]-dt_/dtold_*f[2]);
 }
 
 TUSAS_DEVICE
@@ -5722,14 +5717,6 @@ PARAM_FUNC(param_)
   deltau_d = deltau;
 #endif
   deltau_h = deltau;
-
-  double uref = plist->get<double>("uref_",0.);
-#ifdef TUSAS_HAVE_CUDA
-  cudaMemcpyToSymbol(uref_d,&uref,sizeof(double));
-#else
-  uref_d = uref;
-#endif
-  uref_h = uref;
 }
 //double postproc_c_(const double *u, const double *gradu, const double *xyz, const double &time)
 PPR_FUNC(postproc_)
@@ -7345,6 +7332,10 @@ double W0_d = 1.;
 double W0_h = 1.;
 
 TUSAS_DEVICE
+double uref_d = 1693.4;
+double uref_h = 1693.4;
+
+TUSAS_DEVICE
 double t0_d = 300.;
 double t0_h = 300.;
 TUSAS_DEVICE
@@ -7357,9 +7348,9 @@ void dfldt_uncoupled(GPUBasisLHex* basis, const int index, const double dt_, con
 
   const double coef = 1./tau0_d;
 
-  const double tt[3] = {tpetra::heat::deltau_d*basis[index].uu()+tpetra::heat::uref_d,
-			tpetra::heat::deltau_d*basis[index].uuold()+tpetra::heat::uref_d,
-			tpetra::heat::deltau_d*basis[index].uuoldold()+tpetra::heat::uref_d};
+  const double tt[3] = {tpetra::heat::deltau_d*basis[index].uu()+uref_d,
+			tpetra::heat::deltau_d*basis[index].uuold()+uref_d,
+			tpetra::heat::deltau_d*basis[index].uuoldold()+uref_d};
   const double dfldu_d[3] = {((tt[0] > te_d) && (tt[0] < tl_d)) ? coef*dfldu_mushy_d : 0.0,
 			     ((tt[1] > te_d) && (tt[1] < tl_d)) ? coef*dfldu_mushy_d : 0.0,
 			     ((tt[2] > te_d) && (tt[2] < tl_d)) ? coef*dfldu_mushy_d : 0.0};
@@ -7380,7 +7371,7 @@ void dfldt_uncoupled(GPUBasisLHex* basis, const int index, const double dt_, con
 KOKKOS_INLINE_FUNCTION 
 void dfldt_coupled(GPUBasisLHex* basis, const int index, const double dt_, const double dtold_, double *a)
 {
-  const double coef = tpetra::heat::rho_d*tpetra::goldak::Lf_d/tau0_d;
+  const double coef = tpetra::heat::rho_d*Lf_d/tau0_d;
   const double dfldu_d[3] = {-.5*coef,-.5*coef,-.5*coef};
 
   a[0] = ((1. + dt_/dtold_)*(dfldu_d[0]*basis[index].uu()-dfldu_d[1]*basis[index].uuold())/dt_
@@ -7613,7 +7604,7 @@ PRE_FUNC_TPETRA(prec_test_)
 INI_FUNC(init_heat_)
 {
 	const double t_preheat = t0_d;
-    const double val = (t_preheat-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+    const double val = (t_preheat-uref_h)/tpetra::heat::deltau_h;
     return val;
 }
 
@@ -7622,7 +7613,7 @@ DBC_FUNC(dbc_)
 	// The assumption here is that the desired Dirichlet BC is the initial temperature,
     // that may not be true in the future.
     const double t_preheat = t0_d;
-    const double val = (t_preheat-tpetra::heat::uref_h)/tpetra::heat::deltau_h;
+    const double val = (t_preheat-uref_h)/tpetra::heat::deltau_h;
     return val;
 }
 
@@ -7644,7 +7635,7 @@ PPR_FUNC(postproc_u_)
   //const double z = xyz[2];
 
   //return u[0];
-  return u[0]*tpetra::heat::deltau_h + tpetra::heat::uref_h;
+  return u[0]*tpetra::heat::deltau_h + uref_h;
 }
 
 PARAM_FUNC(param_)
@@ -7811,6 +7802,14 @@ PARAM_FUNC(param_)
   #else
     scaling_constant_d = scaling_constant_p;
   #endif
+  
+  double uref = plist->get<double>("uref_",0.);
+#ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(uref_d,&uref,sizeof(double));
+#else
+  uref_d = uref;
+#endif
+  uref_h = uref;
 
 }
 }//namespace goldak
