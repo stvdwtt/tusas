@@ -7493,11 +7493,18 @@ TUSAS_DEVICE
 const double pi_d = 3.141592653589793;
 const double pi_h = 3.141592653589793;
 
+TUSAS_DEVICE
+double te_d = 1641.;
 double te = 1641.;
+TUSAS_DEVICE
+double tl_d = 1706.;
 double tl = 1706.;
+TUSAS_DEVICE
+double Lf_d = 2.95e5;
 double Lf = 2.95e5;
 TUSAS_DEVICE
-double dfldu_mushy_d = tpetra::heat::rho_d*Lf/(tl-te);//fl=(t-te)/(tl-te);
+double dfldu_mushy_d = 0.0;//fl=(t-te)/(tl-te);
+double dfldu_mushy_h = 0.0;
 
 TUSAS_DEVICE
 double eta_d = 0.3;
@@ -7548,7 +7555,7 @@ TUSAS_DEVICE
 double scaling_constant_d = 1.;
 
 KOKKOS_INLINE_FUNCTION 
-void dfldt_uncoupled(auto basis, const int index, const double dt_, const double dtold_, double *a)
+void dfldt_uncoupled(GPUBasisLHex* basis, const int index, const double dt_, const double dtold_, double *a)
 {
   //the latent heat term is zero outside of the mushy region (ie outside Te < T < Tl)
 
@@ -7557,9 +7564,9 @@ void dfldt_uncoupled(auto basis, const int index, const double dt_, const double
   const double tt[3] = {tpetra::heat::deltau_d*basis[index].uu()+tpetra::heat::uref_d,
 			tpetra::heat::deltau_d*basis[index].uuold()+tpetra::heat::uref_d,
 			tpetra::heat::deltau_d*basis[index].uuoldold()+tpetra::heat::uref_d};
-  const double dfldu_d[3] = {((tt[0] > te) && (tt[0] < tl)) ? coef*dfldu_mushy_d : 0.0,
-			     ((tt[1] > te) && (tt[1] < tl)) ? coef*dfldu_mushy_d : 0.0,
-			     ((tt[2] > te) && (tt[2] < tl)) ? coef*dfldu_mushy_d : 0.0};
+  const double dfldu_d[3] = {((tt[0] > te_d) && (tt[0] < tl_d)) ? coef*dfldu_mushy_d : 0.0,
+			     ((tt[1] > te_d) && (tt[1] < tl_d)) ? coef*dfldu_mushy_d : 0.0,
+			     ((tt[2] > te_d) && (tt[2] < tl_d)) ? coef*dfldu_mushy_d : 0.0};
 
   a[0] = ((1. + dt_/dtold_)*(dfldu_d[0]*basis[index].uu()-dfldu_d[1]*basis[index].uuold())/dt_
                                  -dt_/dtold_*(dfldu_d[0]*basis[index].uu()-dfldu_d[2]*basis[index].uuoldold())/(dt_+dtold_)
@@ -7575,9 +7582,9 @@ void dfldt_uncoupled(auto basis, const int index, const double dt_, const double
 }
 
 KOKKOS_INLINE_FUNCTION 
-void dfldt_coupled(auto basis, const int index, const double dt_, const double dtold_, double *a)
+void dfldt_coupled(GPUBasisLHex* basis, const int index, const double dt_, const double dtold_, double *a)
 {
-  const double coef = tpetra::heat::rho_d*tpetra::goldak::Lf/tau0_d;
+  const double coef = tpetra::heat::rho_d*tpetra::goldak::Lf_d/tau0_d;
   const double dfldu_d[3] = {-.5*coef,-.5*coef,-.5*coef};
 
   a[0] = ((1. + dt_/dtold_)*(dfldu_d[0]*basis[index].uu()-dfldu_d[1]*basis[index].uuold())/dt_
@@ -7863,11 +7870,29 @@ PARAM_FUNC(param_)
   //here we need the rest..
   //and pull fro xml
   //te = 1635.;// K
-  te = plist->get<double>("te_",1641.);
+  double te_p = plist->get<double>("te_",1641.);
+  #ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(te_d,&te_p,sizeof(double));
+#else
+  te_d = te_p;
+#endif
+  te = te_p;
   //tl = 1706.;// K
-  tl = plist->get<double>("tl_",1706.);
+  double tl_p = plist->get<double>("tl_",1706.);
+  #ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(tl_d,&tl_p,sizeof(double));
+#else
+  tl_d = tl_p;
+#endif
+  tl = tl_p;
   //Lf = 17.2;// kJ/mol
-  Lf = plist->get<double>("Lf_",2.95e5);
+  double Lf_p = plist->get<double>("Lf_",2.95e5);
+  #ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(Lf_d,&Lf_p,sizeof(double));
+#else
+  Lf_d = Lf_p;
+#endif
+  Lf = Lf_p; 
 
   double dfldu_mushy_p = tpetra::heat::rho_h*Lf/(tl-te);//fl=(t-te)/(tl-te);
 #ifdef TUSAS_HAVE_CUDA
@@ -7875,7 +7900,7 @@ PARAM_FUNC(param_)
 #else
   dfldu_mushy_d = dfldu_mushy_p;
 #endif
-
+  dfldu_mushy_h = dfldu_mushy_p;
   double eta_p = plist->get<double>("eta_",0.3);//dimensionless
 #ifdef TUSAS_HAVE_CUDA
   cudaMemcpyToSymbol(eta_d,&eta_p,sizeof(double));

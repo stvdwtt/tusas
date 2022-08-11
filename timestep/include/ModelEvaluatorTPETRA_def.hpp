@@ -607,7 +607,8 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 #endif
 
     for(int c = 0; c < num_color; c++){
-
+      std::cout << "color loop" << std::endl;
+      std::cout << TUSAS_MAX_NUMEQS << std::endl;
       //std::vector<int> elem_map = colors[c];
       const std::vector<int> elem_map = Elem_col->get_color(c);//local
 
@@ -622,7 +623,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 //       Kokkos::parallel_for(numeqs,KOKKOS_LAMBDA(const int& neq){
 // 			     flist = tpetra::heat::residual_heat_test_;
 // 			   });
-
+      std::cout << "residual parallel_for..." << std::endl;
       Kokkos::parallel_for(num_elem,KOKKOS_LAMBDA(const int& ne){//this loop is fine for openmp re access to elem_map
 			     //for(int ne =0; ne<num_elem; ne++){
 
@@ -637,12 +638,11 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	}else if (testcase == 8){
 	  rf[0] = tpetra::goldak::residual_test_;
 	  //rf[1] = tpetra::goldak::residual_test_;
-    }else if (testcase == 9){
-      rf[0] = tpetra::farzadi3d::residual_conc_farzadi_activated_dp_;
-      rf[1] = tpetra::farzadi3d::residual_phase_farzadi_coupled_activated_dp_;
-      rf[2] = tpetra::goldak::residual_coupled_test_dp_;
+        }else if (testcase == 9){
+          rf[0] = tpetra::farzadi3d::residual_conc_farzadi_activated_;
+          rf[1] = tpetra::farzadi3d::residual_phase_farzadi_coupled_activated_;
+          rf[2] = tpetra::goldak::residual_coupled_test_;
 	}else{
-      std::cout << "Error: exiting!" << std::endl;
 	  exit(0);
 	}
 
@@ -728,13 +728,17 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  }//i
 	}//gp
       });//parallel_for
+      Kokkos::fence();
+      std::cout << "...completed" << std::endl;
 		     //};//ne
 
     }//c 
 
 #ifdef TUSAS_HAVE_CUDA
     //cudaFree(d_rf);
+  std::cout << "before free" << std::endl;
   free(h_rf);
+  std::cout << "after free" << std::endl;
 #endif
   //exit(0);
     {
@@ -743,6 +747,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     }
   }//get_f
 
+  std::cout << "start Neumann BC section..." << std::endl;
   if (nonnull(outArgs.get_f())) {
     if (NULL != neumannfunc_) {
 
@@ -846,6 +851,9 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
       }
     }//neumann
   }//get_f
+  std::cout << "...completed" << std::endl;
+
+  std::cout << "starting Dirichlet BC section..." << std::endl;
 
   if (nonnull(outArgs.get_f()) && NULL != dirichletfunc_){
     const Teuchos::RCP<vector_type> f_vec =
@@ -910,9 +918,9 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
     }
   }//get_f
 
+  std::cout << "...completed" << std::endl;
 
-
-      
+  std::cout << "starting preconditioner section..." << std::endl;    
   if( nonnull(outArgs.get_W_prec() )){
 
     Teuchos::TimeMonitor PrecFillTimer(*ts_time_precfill);
@@ -989,7 +997,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 
       const int num_elem = elem_map.size();
 
-
+      std::cout << "preconditioner parallel_for..." << std::endl;
       Kokkos::View<int*,Kokkos::DefaultExecutionSpace> elem_map_1d("elem_map_1d",num_elem);
       //Kokkos::vector<int> elem_map_k(num_elem);
       for(int i = 0; i<num_elem; i++) {
@@ -1011,12 +1019,11 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	  pf[1] = tpetra::farzadi3d::prec_phase_farzadi_;
 	}else if (testcase == 8){
 	  pf[0] = tpetra::goldak::prec_test_;
-    }else if (testcase == 9){
-      pf[0] = tpetra::farzadi3d::prec_conc_farzadi_dp_;
-      pf[1] = tpetra::farzadi3d::prec_phase_farzadi_dp_;
-      pf[2] = tpetra::goldak::prec_test_dp_;
+        }else if (testcase == 9){
+          pf[0] = tpetra::farzadi3d::prec_conc_farzadi_;
+          pf[1] = tpetra::farzadi3d::prec_phase_farzadi_;
+          pf[2] = tpetra::goldak::prec_test_;
 	}else{
-      std::cout << "Error: exiting! (preconditioner)" << std::endl;
 	  exit(0);
 	}
 #ifdef TUSAS3D	
@@ -1091,7 +1098,7 @@ void ModelEvaluatorTPETRA<Scalar>::evalModelImpl(
 	}//gp
 
       });//parallel_for
-
+      std::cout << "...completed" << std::endl;
     }//c
 
 #ifdef TUSAS_HAVE_CUDA
@@ -1228,8 +1235,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   //#endif
   builder.setParameterList(lsparams);
   
-  std::cout << "a" << std::endl;
-
   if( 0 == mypid )
     builder.getParameterList()->print(std::cout);
 
@@ -1250,8 +1255,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
 
   Thyra::V_S(initial_guess.ptr(),Teuchos::ScalarTraits<double>::one());
   
-  std::cout << "b" << std::endl;
-
   // Create the JFNK operator
   Teuchos::ParameterList printParams;//cn this is empty??? for now
   Teuchos::RCP<NOX::Thyra::MatrixFreeJacobianOperator<double> > jfnkOp =
@@ -1267,9 +1270,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   Teuchos::RCP< ::Thyra::ModelEvaluator<double> > thyraModel =
     Teuchos::rcp(new NOX::MatrixFreeModelEvaluatorDecorator<double>(Model));
     
-    std::cout << "c" << std::endl;
-
-
   // Wrap the model evaluator in a JFNK Model Evaluator
 //   Teuchos::RCP< ::Thyra::ModelEvaluator<double> > thyraModel =
 //     Teuchos::rcp(new NOX::MatrixFreeModelEvaluatorDecorator<double>(this));
@@ -1291,8 +1291,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
 
   nox_group->computeF();
   
-  std::cout << "d" << std::endl;
-
   // VERY IMPORTANT!!!  jfnk object needs base evaluation objects.
   // This creates a circular dependency, so use a weak pointer.
   jfnkOp->setBaseEvaluationToNOXGroup(nox_group.create_weak());
@@ -1305,8 +1303,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   double relrestol = 1.0e-6;
   relrestol = paramList.get<double> (TusasnoxrelresNameString);
   
-  std::cout << "e" << std::endl;
-
   Teuchos::RCP<NOX::StatusTest::NormF> relresid = 
     Teuchos::rcp(new NOX::StatusTest::NormF(*nox_group.get(), relrestol));
 
@@ -1332,9 +1328,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
   combo->addStatusTest(converged);
   combo->addStatusTest(maxiters);
   
-  std::cout << "f" << std::endl;
-
-
   Teuchos::RCP<Teuchos::ParameterList> nl_params =
     Teuchos::rcp(new Teuchos::ParameterList(paramList.sublist(TusasnlsNameString)));
   if( 0 == mypid )
@@ -1388,8 +1381,6 @@ void ModelEvaluatorTPETRA<scalar_type>::init_nox()
       converged1->addStatusTest(maxiters1);
       //combo->addStatusTest(converged);
       
-      std::cout << "g" << std::endl;
-
       
       Teuchos::RCP<Teuchos::ParameterList> nl_params1 =
 	Teuchos::rcp(new Teuchos::ParameterList);
