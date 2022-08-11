@@ -5570,9 +5570,25 @@ double rho_d = 1.;
 TUSAS_DEVICE
 double cp_d = 1.;
 
+TUSAS_DEVICE
+double tau0_d = 1.;
+TUSAS_DEVICE
+double W0_d = 1.;
+TUSAS_DEVICE
+double deltau_d = 1.;
+TUSAS_DEVICE
+double uref_d = 0.;
+
 double k_h = 2.;
 double rho_h = 1.;
 double cp_h = 1.;
+
+double tau0_h = 1.;
+double W0_h = 1.;
+
+double deltau_h = 1.;
+double uref_h = 0.;
+
 
   //KOKKOS_INLINE_FUNCTION 
 DBC_FUNC(dbc_zero_) 
@@ -5616,6 +5632,7 @@ RES_FUNC_TPETRA(residual_heat_test_)
 TUSAS_DEVICE
 RES_FUNC_TPETRA((*residual_heat_test_dp_)) = residual_heat_test_;
 
+// SJD: This function appears to be unused.
 TUSAS_DEVICE
 double residual_heat_test_p(GPUBasisLHex * basis,
                                     const int &i,
@@ -5681,6 +5698,38 @@ PARAM_FUNC(param_)
   cp_d = cp;
 #endif
   cp_h = cp;
+  
+  double tau0 = plist->get<double>("tau0_",1.);
+#ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(tau0_d,&tau0,sizeof(double));
+#else
+  tau0_d = tau0;
+#endif
+  tau0_h = tau0;
+
+  double W0 = plist->get<double>("W0_",1.);
+#ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(W0_d,&W0,sizeof(double));
+#else
+  W0_d = W0;
+#endif
+  W0_h = W0;
+
+  double deltau = plist->get<double>("deltau_",1.);
+#ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(deltau_d,&deltau,sizeof(double));
+#else
+  deltau_d = deltau;
+#endif
+  deltau_h = deltau;
+
+  double uref = plist->get<double>("uref_",0.);
+#ifdef TUSAS_HAVE_CUDA
+  cudaMemcpyToSymbol(uref_d,&uref,sizeof(double));
+#else
+  uref_d = uref;
+#endif
+  uref_h = uref;
 }
 //double postproc_c_(const double *u, const double *gradu, const double *xyz, const double &time)
 PPR_FUNC(postproc_)
@@ -7244,8 +7293,8 @@ double te = 1641.;
 double tl = 1706.;
 double Lf = 2.95e5;
 TUSAS_DEVICE
-double dfldt_d = 403.923e5;
-  //double dfldt_d = 8900.*Lf/(tl-te);//fl=(t-te)/(tl-te);
+double dfldu_mushy_d = 0.0;//fl=(t-te)/(tl-te);
+double dfldu_mushy_h = 0.0;
 
 TUSAS_DEVICE
 double eta_d = 0.3;
